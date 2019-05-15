@@ -1,17 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.ociweb</groupId>
+  <groupId>com.javanut</groupId>
   <artifactId>pronghorn-pipes</artifactId>
   <name>pronghorn-pipes</name>
-  <version>1.0.34</version>
-    <!-- Looking for the release jar? This project is under active development.
-         Please consider getting involved and sponsoring the completion of Pronghorn.
-         mailto:info@ociweb.com;?subject=Pronghorn%20Sponsor%20Inquiry
-     -->
+  <version>1.1.0</version>
+   
     <description>Ring buffer based queuing utility for applications that require high performance and/or a small
         footprint. Well suited for embedded and stream based processing.
     </description>
-    <url>https://github.com/oci-pronghorn/PronghornPipes</url>
+    <url>https://github.com/nathantippy/Pronghorn/tree/master/pronghorn-pipes</url>
     <licenses>
         <license>
             <name>BSD-3 License</name>
@@ -21,9 +18,7 @@
     <developers>
         <developer>
             <name>Nathan Tippy</name>
-            <email>info@objectcomputing.com</email>
-            <organization>ObjectComputing</organization>
-            <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+            <email>nathantippy@javanut.com</email>
         </developer>
     </developers>
   <properties>
@@ -116,9 +111,9 @@
   </dependencies>
     
   <scm>
-    <connection>scm:git:git://github.com/oci-pronghorn/PronghornPipes.git</connection>
-    <url>https://github.com/oci-pronghorn/PronghornPipes</url>    
-    <developerConnection>scm:git:ssh://git@github.com/oci-pronghorn/PronghornPipes.git</developerConnection>
+    <connection>scm:git:git://github.com/nathantippy/Pronghorn/pronghorn-pipes/PronghornPipes.git</connection>
+    <url>https://github.com/nathantippy/Pronghorn/tree/master/pronghorn-pipes</url>    
+    <developerConnection>scm:git:ssh://git@github.com/nathantippy/Pronghorn/pronghorn-pipes/PronghornPipes.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

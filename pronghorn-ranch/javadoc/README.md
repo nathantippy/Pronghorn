@@ -21,23 +21,23 @@
 #### Create a new directory outside of the GreenLighter project directory for your new IoT project.
 Now, ```cd``` into the directory for your to be created IoT project, and enter:
 ```
-mvn archetype:generate -DarchetypeGroupId=com.ociweb -DarchetypeArtifactId=PronghornRanch -DarchetypeVersion=0.0.1-SNAPSHOT
+mvn archetype:generate -DarchetypeGroupId=com.javanut -DarchetypeArtifactId=PronghornRanch -DarchetypeVersion=0.0.1-SNAPSHOT
 ```
 The terminal now asks for:
 
-```groupID```: type in  *com.ociweb* then press Enter
+```groupID```: type in  *com.javanut* then press Enter
 
 ```ArtifactID```: type in name of your project then press Enter
 
 ```version: 1.0-SNAPSHOT ```: Ignore, Press Enter
 
-```package: com.ociweb ```: Ignore, Press Enter
+```package: com.javanut ```: Ignore, Press Enter
 
 ```Y:```  :  Type *Y*, press Enter
 
 
 This will create a folder named after your project, which includes all the project files. Let’s call our project *ProjectXYZ*.  
-If you’re working from Terminal, open up the file  “ProjectXYZ”/src/main/java/com/ociweb/IoTApp.java . You can start implementing the project code from here. 
+If you’re working from Terminal, open up the file  “ProjectXYZ”/src/main/java/com/javanut/IoTApp.java . You can start implementing the project code from here. 
 
 If you’re using an IDE, open up the created Maven project - *ProjectXYZ* and start working from IoTApp.java
 

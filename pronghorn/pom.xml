@@ -1,13 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.ociweb</groupId>
+    <groupId>com.javanut</groupId>
     <artifactId>pronghorn</artifactId>
     <name>pronghorn</name>
-    <version>1.0.43</version>
-    <!-- Looking for the release jar? This project is under active development.
-       Please consider getting involved and sponsoring the completion of Pronghorn.
-       mailto:info@ociweb.com;?subject=Pronghorn%20Sponsor%20Inquiry
-   -->
+    <version>1.1.0</version>
+   
     <description>Primary dependency for any project using the Pronghorn framework</description>
     <url>https://github.com/oci-pronghorn/Pronghorn</url>
     <licenses>
@@ -17,17 +14,15 @@
         </license>
     </licenses>
     <developers>
-        <developer>
+       <developer>
             <name>Nathan Tippy</name>
-            <email>info@objectcomputing.com</email>
-            <organization>ObjectComputing</organization>
-            <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+            <email>nathantippy@javanut.com</email>
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git://github.com/oci-pronghorn/Pronghorn.git</connection>
-        <url>https://github.com/oci-pronghorn/Pronghorn</url>
-        <developerConnection>scm:git:ssh://git@github.com/oci-pronghorn/Pronghorn.git</developerConnection>
+        <connection>scm:git:git://github.com/nathantippy/Pronghorn/pronghorn/Pronghorn.git</connection>
+        <url>https://github.com/nathantippy/Pronghorn/tree/master/pronghorn</url>
+        <developerConnection>scm:git:ssh://git@github.com/nathantippy/Pronghorn/pronghorn/Pronghorn.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -100,15 +95,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>pronghorn-pipes</artifactId>
-            <version>1.0.34</version>
+            <version>1.1.0</version>
         </dependency>
 
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>ph-tls-pure-java</artifactId>
-            <version>1.0.4</version>
+            <version>1.1.0</version>
         </dependency>
 
         <dependency>

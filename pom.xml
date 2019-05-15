@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.ociweb</groupId>
+  <groupId>com.javanut</groupId>
   <artifactId>open-edge-pronghorn</artifactId>
   <name>open-edge-pronghorn</name>
-  <version>1.0.43</version>
+  <version>1.1.0</version>
   <packaging>pom</packaging>
  
   <modules>  
@@ -16,15 +16,6 @@
     <module>pronghorn-ranch</module>
     <module>log-telemetry</module>
   </modules>
-  
-  
-    <dependencies>
-          <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
-        </dependency>
-    </dependencies>
     
   <reporting>
     <plugins>

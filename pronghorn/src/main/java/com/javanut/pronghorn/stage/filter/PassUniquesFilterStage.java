@@ -1,0 +1,162 @@
+package com.javanut.pronghorn.stage.filter;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
+
+import com.javanut.pronghorn.pipe.MessageSchema;
+import com.javanut.pronghorn.pipe.Pipe;
+import com.javanut.pronghorn.pipe.PipeReader;
+import com.javanut.pronghorn.pipe.PipeWriter;
+import com.javanut.pronghorn.stage.PronghornStage;
+import com.javanut.pronghorn.stage.scheduling.GraphManager;
+import com.javanut.pronghorn.util.RollingBloomFilter;
+
+/**
+ * _no-docs_
+ * TO-DO
+ * @param <T>
+ *
+ * @author Nathan Tippy
+ * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ */
+public class PassUniquesFilterStage<T extends MessageSchema<T>> extends PronghornStage {
+
+    //after instances of each id then let them pass
+    //saves its own state
+    
+    private final int maximumItems = 10_000_000;
+    private final double maximumFailure = .00001; 
+    // 10_000_000  .00001 -> 32MB
+    
+    private RollingBloomFilter filter;
+    private final Pipe<T> input;
+    private final Pipe<T> output;
+    private final int varFieldLoc;
+    private final File storage;
+    private final File backup;
+    private boolean moveInProgress = false;            
+    
+    public PassUniquesFilterStage(GraphManager graphManager, Pipe<T> input, Pipe<T> output, int varFieldLoc, File storage) {
+        super(graphManager, input, output);
+        this.input = input;
+        this.output = output;
+        this.varFieldLoc = varFieldLoc;
+        this.storage = storage;
+        try {
+            this.backup = new File(storage.getCanonicalPath()+".bak");
+        } catch (IOException e) {
+           throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void startup() {
+   
+        if (storage.exists()) {
+            File localStorage = storage;
+            
+            try {
+                filter = loadFilter(localStorage);
+            } catch (Exception e) {
+                System.out.println("Unable to load old filters, starting with new files");
+                buildNewFilters();
+            }
+            
+            System.out.println("loaded BloomFilter");
+            System.out.println("seen pct full "+ (100f*filter.pctConsumed()));
+            System.out.println();            
+            
+        } else {
+            buildNewFilters();
+        }
+    }
+
+    private RollingBloomFilter loadFilter(File file) throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream fist = new FileInputStream(file);
+        ObjectInputStream oist = new ObjectInputStream(fist);                
+        RollingBloomFilter localFilter = (RollingBloomFilter) oist.readObject();
+         
+        oist.close();
+        return localFilter;
+    }
+
+    private void buildNewFilters() {
+        filter = new RollingBloomFilter(maximumItems, maximumFailure);
+    }
+    
+    @Override
+    public void shutdown() {
+        //NOTE: this save resume logic is all new and may be replaced with pipes and/or and external system.
+        
+        saveFilter();
+    }
+
+    private void saveFilter() {
+        try {
+            if (backup.exists()) {
+                backup.delete();
+            }
+            storage.renameTo(backup);
+            
+           // RandomAccessFile raf = new RandomAccessFile(storage, "rws");
+            
+          
+            FileOutputStream fost = new FileOutputStream(storage);
+            ObjectOutputStream oost = new ObjectOutputStream(fost);
+            
+            oost.writeObject(filter);
+            
+            oost.close();
+            
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void run() {
+        
+        if (moveInProgress) {
+            if (!PipeReader.tryMoveSingleMessage(input, output)) {
+                return;
+            } else {
+                moveInProgress = false;
+                PipeReader.releaseReadLock(input);
+            }
+        }
+        
+        
+        boolean updateFile = false;
+        
+        while (PipeWriter.hasRoomForWrite(output) && PipeReader.tryReadFragment(input)) {
+            updateFile = true;
+            byte[] backing = PipeReader.readBytesBackingArray(input, varFieldLoc);
+            int pos = PipeReader.readBytesPosition(input, varFieldLoc);
+            int len = PipeReader.readBytesLength(input, varFieldLoc);
+            int mask = PipeReader.readBytesMask(input, varFieldLoc);
+                        
+            if (!filter.mayContain(backing,pos,len,mask)) {
+                filter.addValue(backing,pos,len,mask);                
+
+                if (! PipeReader.tryMoveSingleMessage(input, output)) {
+                    moveInProgress = true;
+                    return;
+                }
+                
+            }
+            
+            PipeReader.releaseReadLock(input);
+        }
+        if (updateFile) {
+            saveFilter();
+        }
+    }   
+    
+
+}

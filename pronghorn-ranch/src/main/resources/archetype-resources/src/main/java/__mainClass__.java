@@ -7,15 +7,15 @@ package ${package};
  * *******************************************************************
  */
 
-import com.ociweb.pronghorn.pipe.Pipe;
-import com.ociweb.pronghorn.pipe.RawDataSchema;
-import com.ociweb.pronghorn.stage.file.FileBlobReadStage;
-import com.ociweb.pronghorn.stage.route.ReplicatorStage;
-import com.ociweb.pronghorn.stage.scheduling.GraphManager;
-import com.ociweb.pronghorn.stage.scheduling.StageScheduler;
-import com.ociweb.pronghorn.stage.test.ConsoleJSONDumpStage;
-import com.ociweb.pronghorn.stage.test.PipeCleanerStage;
-import com.ociweb.pronghorn.util.MainArgs;
+import com.javanut.pronghorn.pipe.Pipe;
+import com.javanut.pronghorn.pipe.RawDataSchema;
+import com.javanut.pronghorn.stage.file.FileBlobReadStage;
+import com.javanut.pronghorn.stage.route.ReplicatorStage;
+import com.javanut.pronghorn.stage.scheduling.GraphManager;
+import com.javanut.pronghorn.stage.scheduling.StageScheduler;
+import com.javanut.pronghorn.stage.test.ConsoleJSONDumpStage;
+import com.javanut.pronghorn.stage.test.PipeCleanerStage;
+import com.javanut.pronghorn.util.MainArgs;
 
 public class ${mainClass}  {
 

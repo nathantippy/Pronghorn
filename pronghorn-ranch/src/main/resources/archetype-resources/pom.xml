@@ -20,7 +20,7 @@
 
 	<dependencies>
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>pronghorn</artifactId>
             <version>${project.version}</version>
         </dependency>

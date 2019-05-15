@@ -22,19 +22,14 @@ Please refer to the [wiki](https://oci-pronghorn.gitbook.io/pronghorn/chapter-0-
   To use this in your Maven project, add the following dependency:
 ```xml
     <dependency>
-      <groupId>com.ociweb</groupId>
+      <groupId>com.javanut</groupId>
       <artifactId>Pronghorn</artifactId>
-      <version>1.0.3</version>
+      <version>1.1.0</version>
     </dependency> 
         
 
 ------------------------------------------
 
 For more technical details please check out the Specification.md file.
-Looking for the release jar? This project is under active development.
 
-Please consider getting involved and sponsoring the completion of [Pronghorn](mailto:info@ociweb.com;?subject=Pronghorn%20Sponsor%20Inquiry)
-
-
-Nathan Tippy, Principal Software Engineer [OCI](http://objectcomputing.com)  
 Twitter: @NathanTippy

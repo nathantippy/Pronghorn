@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.ociweb</groupId>
+    <groupId>com.javanut</groupId>
     <artifactId>jpg-raster</artifactId>
     <name>jpg-raster</name>
-    <version>1.0.43</version>
+    <version>1.1.0</version>
 
     <description>JPG-Raster (or JPG-to-Raster or J2R) is a JPG file decoder and encoder.
         It reads a JPG file and decompresses all of its data which is then accessible as an array of raw RGB pixel
@@ -19,18 +19,16 @@
         </license>
     </licenses>
     <developers>
-        <developer>
+       <developer>
             <name>Nathan Tippy</name>
-            <email>info@objectcomputing.com</email>
-            <organization>ObjectComputing</organization>
-            <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+            <email>nathantippy@javanut.com</email>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/oci-pronghorn/JPG-Raster.git</connection>
-        <url>https://github.com/oci-pronghorn/JPG-Raster</url>
-        <developerConnection>scm:git:ssh://git@github.com/oci-pronghorn/JPG-Raster.git</developerConnection>
+        <connection>scm:git:git://github.com/nathantippy/Pronghorn/jpg-raster/JPG-Raster.git</connection>
+        <url>https://github.com/nathantippy/Pronghorn/tree/master/JPG-Raster</url>
+        <developerConnection>scm:git:ssh://git@github.com/nathantippy/Pronghorn/jpg-raster/JPG-Raster.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
     <properties>
@@ -148,7 +146,7 @@
   
     <dependencies>
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>pronghorn</artifactId>
             <version>${version}</version>
         </dependency>
@@ -253,7 +251,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.ociweb.jpgRaster.JPGRaster</mainClass>
+                            <mainClass>com.javanut.jpgRaster.JPGRaster</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

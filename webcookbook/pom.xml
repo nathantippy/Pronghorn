@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.ociweb</groupId>
+    <groupId>com.javanut</groupId>
     <artifactId>webcookbook</artifactId>
     <name>webcookbook</name>
-    <version>1.0.43</version>
+    <version>1.1.0</version>
     <description>Example project of the web components of pronghorn
     </description>
     <url>https://github.com/oci-pronghorn/WebCookBook</url>
@@ -14,11 +14,9 @@
         </license>
     </licenses>
     <developers>
-        <developer>
+       <developer>
             <name>Nathan Tippy</name>
-            <email>info@objectcomputing.com</email>
-            <organization>ObjectComputing</organization>
-            <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+            <email>nathantippy@javanut.com</email>
         </developer>
     </developers>
     <scm>
@@ -113,7 +111,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>pronghorn</artifactId>
             <version>${version}</version>
         </dependency>
@@ -235,7 +233,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.ociweb.WebCookbook</mainClass>
+                            <mainClass>com.javanut.WebCookbook</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

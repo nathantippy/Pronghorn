@@ -53,19 +53,13 @@ For examples on how these APIs may be used see the projects:
   To use this in your maven project add the following dependency.
 
     <dependency>
-      <groupId>com.ociweb</groupId>
+      <groupId>com.javanut</groupId>
       <artifactId>PronghornPipes</artifactId>
-      <version>1.0.3</version>
+      <version>1.1.0</version>
     </dependency> 
    
      
 
 ------------------------------------------
 
-Looking for the release jar? This project is under active development.
-
-Please consider getting involved and sponsoring the completion of [PronghornPipes](mailto:info@ociweb.com;?subject=Pronghorn%20Sponsor%20Inquiry)
-
-
-Nathan Tippy, Principal Software Engineer [OCI](http://ociweb.com)  
 Twitter: @NathanTippy

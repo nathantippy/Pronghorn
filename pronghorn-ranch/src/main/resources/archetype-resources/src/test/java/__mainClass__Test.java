@@ -7,12 +7,12 @@ package ${package};
  */
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.ociweb.pronghorn.pipe.Pipe;
-import com.ociweb.pronghorn.pipe.PipeWriter;
-import com.ociweb.pronghorn.stage.PronghornStage;
-import com.ociweb.pronghorn.stage.file.FileBlobReadStage;
-import com.ociweb.pronghorn.stage.scheduling.GraphManager;
-import com.ociweb.pronghorn.stage.test.ConsoleJSONDumpStage;
+import com.javanut.pronghorn.pipe.Pipe;
+import com.javanut.pronghorn.pipe.PipeWriter;
+import com.javanut.pronghorn.stage.PronghornStage;
+import com.javanut.pronghorn.stage.file.FileBlobReadStage;
+import com.javanut.pronghorn.stage.scheduling.GraphManager;
+import com.javanut.pronghorn.stage.test.ConsoleJSONDumpStage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -19,19 +19,19 @@ To simplify creation of a Pronghorn project, we created [PronghornRanch](https:/
 
 First, run the following command:
 
-    mvn archetype:generate -DarchetypeGroupId=com.ociweb -DarchetypeArtifactId=pronghorn-ranch
+    mvn archetype:generate -DarchetypeGroupId=com.javanut -DarchetypeArtifactId=pronghorn-ranch
 
 You will then be prompted to enter the following properties:
 
 ***
 
-```groupID:``` Type in com.ociweb, then press enter
+```groupID:``` Type in com.javanut, then press enter
 
 ```artifactID:``` Type in name of your project, lower case with - as needed, then press enter
 
 ```version: 1.0-SNAPSHOT:``` Ignore, press enter
 
-```package: com.ociweb:``` Ignore, press enter
+```package: com.javanut:``` Ignore, press enter
 
 ```mainClass:``` Type in proper case class name
 

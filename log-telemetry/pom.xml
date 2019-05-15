@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.ociweb.logtelemetry</groupId>
+	<groupId>com.javanut.logtelemetry</groupId>
 	<artifactId>log-telemetry</artifactId>
-	<version>1.0.43</version>
+	<version>1.1.0</version>
 	<description>load telemetry from log file as a telemetry server for easy viewing.</description>
 
 	<properties>
@@ -16,7 +16,7 @@
 
 	<dependencies>
         <dependency>
-            <groupId>com.ociweb</groupId>
+            <groupId>com.javanut</groupId>
             <artifactId>pronghorn</artifactId>
             <version>${version}</version>
         </dependency>
@@ -107,7 +107,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>com.ociweb.logtelemetry.LogTelemetry</mainClass>
+							<mainClass>com.javanut.logtelemetry.LogTelemetry</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>

@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.ociweb</groupId>
+  <groupId>com.javanut</groupId>
   <artifactId>webcookbook</artifactId>
   <name>webcookbook</name>
-  <version>1.0.2</version>
+  <version>1.1.0</version>
   <description>Example project of the web components of pronghorn</description>
   <url>https://github.com/oci-pronghorn/WebCookBook</url>
   <developers>
     <developer>
       <name>Nathan Tippy</name>
-      <email>info@objectcomputing.com</email>
-      <organization>ObjectComputing</organization>
-      <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+      <email>nathantippy@javanut.com</email>
     </developer>
   </developers>
   <licenses>
@@ -27,13 +25,6 @@
     <url>https://github.com/oci-pronghorn/WebCookBook</url>
   </scm>
   <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-webdav-jackrabbit</artifactId>
-        <version>2.2</version>
-      </extension>
-    </extensions>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -48,7 +39,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.9.1</version>
+        <version>3.0.1</version>
         <executions>
           <execution>
             <id>attach-javadocs</id>
@@ -62,20 +53,8 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <forceCreation>true</forceCreation>
-          <archive>
-            <manifestEntries>
-              <Build-Time>${maven.build.timestamp}</Build-Time>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.0.1</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -133,48 +112,14 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>com.ociweb.WebCookbook</mainClass>
+              <mainClass>com.javanut.WebCookbook</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
-          <finalName>uberWebCookbook</finalName>
+          <finalName>WebCookbook</finalName>
           <appendAssemblyId>false</appendAssemblyId>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.github.wvengen</groupId>
-        <artifactId>proguard-maven-plugin</artifactId>
-        <version>2.0.13</version>
-        <executions>
-          <execution>
-            <id>proguard</id>
-            <phase>package</phase>
-            <goals>
-              <goal>proguard</goal>
-            </goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>net.sf.proguard</groupId>
-            <artifactId>proguard-base</artifactId>
-            <version>5.1</version>
-            <scope>runtime</scope>
-          </dependency>
-        </dependencies>
-        <configuration>
-          <obfuscate>false</obfuscate>
-          <libs>
-            <lib>${java.bootstrap.classes}</lib>
-            <lib>${java.cryptographic.extension.classes}</lib>
-            <lib>${java.secure.socket.extension.classes}</lib>
-          </libs>
-          <injar>uberWebCookbook.jar</injar>
-          <outjar>WebCookbook.jar</outjar>
-          <outputDirectory>${project.build.directory}</outputDirectory>
-          <proguardInclude>${basedir}/proguard.conf</proguardInclude>
         </configuration>
       </plugin>
     </plugins>
@@ -186,6 +131,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-jar-plugin</artifactId>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>empty-javadoc-jar</id>
@@ -195,13 +141,7 @@
                 </goals>
                 <configuration>
                   <classifier>javadoc</classifier>
-                  <classesDirectory>/home/nate/git/Pronghorn/webcookbook/javadoc</classesDirectory>
-                  <forceCreation>true</forceCreation>
-                  <archive>
-                    <manifestEntries>
-                      <Build-Time>2018-09-13T02:36:27Z</Build-Time>
-                    </manifestEntries>
-                  </archive>
+                  <classesDirectory>${basedir}/javadoc</classesDirectory>
                 </configuration>
               </execution>
             </executions>
@@ -215,20 +155,6 @@
             <artifactId>nexus-staging-maven-plugin</artifactId>
             <version>1.6.8</version>
             <extensions>true</extensions>
-            <executions>
-              <execution>
-                <id>injected-nexus-deploy</id>
-                <phase>deploy</phase>
-                <goals>
-                  <goal>deploy</goal>
-                </goals>
-                <configuration>
-                  <serverId>ossrh</serverId>
-                  <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                  <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                </configuration>
-              </execution>
-            </executions>
             <configuration>
               <serverId>ossrh</serverId>
               <nexusUrl>https://oss.sonatype.org/</nexusUrl>
@@ -277,10 +203,10 @@
     </dependency>
   </dependencies>
   <properties>
-    <java.secure.socket.extension.classes>${java.home}/lib/jsse.jar</java.secure.socket.extension.classes>
     <java.bootstrap.classes>${java.home}/lib/rt.jar</java.bootstrap.classes>
-    <java.cryptographic.extension.classes>${java.home}/lib/jce.jar</java.cryptographic.extension.classes>
+    <java.secure.socket.extension.classes>${java.home}/lib/jsse.jar</java.secure.socket.extension.classes>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.cryptographic.extension.classes>${java.home}/lib/jce.jar</java.cryptographic.extension.classes>
   </properties>
 </project>
 

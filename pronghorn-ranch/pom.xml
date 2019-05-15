@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.ociweb</groupId>
+    <groupId>com.javanut</groupId>
     <artifactId>pronghorn-ranch</artifactId>
     <name>pronghorn-ranch</name>
-    <version>1.0.43</version>
+    <version>1.1.0</version>
     <description>A Maven Archetype for Pronghorn projects
     </description>
-    <url>https://github.com/oci-pronghorn/PronghornRanch</url>
+    <url>https://github.com/nathantippy/Pronghorn/tree/master/pronghorn-ranch</url>
     <licenses>
         <license>
             <name>BSD-3 License</name>
@@ -14,11 +14,9 @@
         </license>
     </licenses>
     <developers>
-        <developer>
+       <developer>
             <name>Nathan Tippy</name>
-            <email>info@objectcomputing.com</email>
-            <organization>ObjectComputing</organization>
-            <organizationUrl>http://www.ObjectComputing.com</organizationUrl>
+            <email>nathantippy@javanut.com</email>
         </developer>
     </developers>
     <properties>
@@ -26,9 +24,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/oci-pronghorn/PronghornRanch.git</connection>
-        <url>https://github.com/oci-pronghorn/PronghornRanch</url>
-        <developerConnection>scm:git:ssh://git@github.com/oci-pronghorn/PronghornRanch.git</developerConnection>
+        <connection>scm:git:git://github.com/nathantippy/Pronghorn/pronghorn-ranch/PronghornRanch.git</connection>
+        <url>https://github.com/nathantippy/Pronghorn/tree/master/pronghorn-ranch</url>
+        <developerConnection>scm:git:ssh://git@github.com/nathantippy/Pronghorn/pronghorn-ranch/PronghornRanch.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 

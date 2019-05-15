@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import ${package}.SchemaOneSchema;
-import com.ociweb.pronghorn.pipe.util.build.FROMValidation;
+import com.javanut.pronghorn.pipe.util.build.FROMValidation;
 
 public class SchemaTest {
 

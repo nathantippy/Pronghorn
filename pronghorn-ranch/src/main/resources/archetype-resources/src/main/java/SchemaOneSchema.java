@@ -1,11 +1,11 @@
 package ${package};
 
-import com.ociweb.pronghorn.pipe.DataInputBlobReader;
-import com.ociweb.pronghorn.pipe.FieldReferenceOffsetManager;
-import com.ociweb.pronghorn.pipe.MessageSchema;
-import com.ociweb.pronghorn.pipe.Pipe;
-import com.ociweb.pronghorn.pipe.PipeReader;
-import com.ociweb.pronghorn.pipe.PipeWriter;
+import com.javanut.pronghorn.pipe.DataInputBlobReader;
+import com.javanut.pronghorn.pipe.FieldReferenceOffsetManager;
+import com.javanut.pronghorn.pipe.MessageSchema;
+import com.javanut.pronghorn.pipe.Pipe;
+import com.javanut.pronghorn.pipe.PipeReader;
+import com.javanut.pronghorn.pipe.PipeWriter;
 
 public class SchemaOneSchema extends MessageSchema<SchemaOneSchema> {
 
