@@ -45,16 +45,8 @@
  
   setup workspace:
   put this file in the root of your git folder
-  clone the following into your git folder
+  clone the subprojects into your git folder
   
-  git clone https://github.com/oci-pronghorn/Ph-TLS-pureJava.git
-  git clone https://github.com/oci-pronghorn/Pronghorn.git
-  git clone https://github.com/oci-pronghorn/PronghornRanch.git
-  git clone https://github.com/oci-pronghorn/PronghornPipes.git
-  git clone https://github.com/oci-pronghorn/JPG-Raster.git
-  git clone https://github.com/oci-pronghorn/WebCookbook.git
-   
- 
   tobuild:  
             mvn -offline -T 1C -f open-edge-pom.xml install
             mvn -f open-edge-pom.xml install
