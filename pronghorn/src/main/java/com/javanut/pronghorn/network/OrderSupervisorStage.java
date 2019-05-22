@@ -597,7 +597,11 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
 		 //output pipe is accumulating this data before it has even stared the message to be sent
 		 //this is required in order to "skip over" the extra tags used eg "hidden" between messages by some modules.
 		 /////////////////////////
-		 DataOutputBlobWriter<NetPayloadSchema> outputStream = Pipe.openOutputStream(output);
+	
+		 DataOutputBlobWriter<NetPayloadSchema> outputStream = 
+				 Pipe.isInBlobFieldWrite(output)
+				 ? Pipe.outputStream(output)
+			     : Pipe.openOutputStream(output);
 			 
 		 final int expSeq = Pipe.takeInt(input); //sequence number
 		 assert(sequenceNo == expSeq);

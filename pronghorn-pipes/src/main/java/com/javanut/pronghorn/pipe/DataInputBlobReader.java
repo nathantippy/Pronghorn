@@ -88,6 +88,9 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
         this.bytesLowBound  = this.position       = PipeReader.readBytesPosition(pipe, loc);
         this.backing        = PipeReader.readBytesBackingArray(pipe, loc); 
         assert(this.backing!=null) : "The pipe must be init before use.";
+        if (null==backing) {
+        	throw new UnsupportedOperationException("bad loc value of: "+loc);
+        }
         this.bytesHighBound = pipe.blobMask & (position + length);
         
         assert(Pipe.validatePipeBlobHasDataToRead(pipe, position, length));
@@ -102,6 +105,9 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
     	reader.bytesLowBound  = reader.position = PipeReader.peekDataPosition(reader.pipe, loc);
     	reader.backing        = PipeReader.peekDataBackingArray(reader.pipe, loc); 
     	assert(reader.backing!=null) : "The pipe must be init before use.";
+    	 if (null==reader.backing) {
+         	throw new UnsupportedOperationException("bad loc value of: "+loc);
+         }
     	reader.bytesHighBound = reader.pipe.blobMask & (reader.position + reader.length);
      
         return reader.length;
@@ -193,6 +199,10 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 		assert(this.backing!=null) : 
 			"The pipe "+(1==(meta>>31)?" constant array ": " blob ")+"must be defined before use.\n "+this.pipe;
 			
+		if (null==this.backing) {
+	        	throw new UnsupportedOperationException("bad loc value of: "+meta);
+	    }
+		 
 		this.bytesHighBound = this.pipe.blobMask & (this.position + this.length);
 		
 		assert(Pipe.validatePipeBlobHasDataToRead(this.pipe, this.position, this.length));
@@ -207,7 +217,11 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
     	
 		this.length    = Math.max(0, Pipe.peekInt(this.pipe, offset+1));
 		this.bytesLowBound = this.position = Pipe.convertToPosition(meta, this.pipe);
-		this.backing   = Pipe.byteBackingArray(meta, this.pipe); 
+		this.backing   = Pipe.byteBackingArray(meta, this.pipe);
+		 if (null==this.backing) {
+	        	throw new UnsupportedOperationException("bad loc value of: "+meta);
+	        }
+		 
 		assert(this.backing!=null) : 
 			"The pipe "+(1==(meta>>31)?" constant array ": " blob ")+"must be defined before use.\n "+this.pipe;
 			
@@ -239,6 +253,9 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 			assert(that.backing!=null) : 
 				"The pipe "+(1==(meta>>31)?" constant array ": " blob ")+"must be defined before use.\n "+that.pipe;
 				
+			 if (null==that.backing) {
+		        	throw new UnsupportedOperationException("bad loc value of: "+meta);
+		        }
 			that.bytesHighBound = that.pipe.blobMask & (that.position + that.length);
 			
 			assert(Pipe.validatePipeBlobHasDataToRead(that.pipe, that.position, that.length));
@@ -264,6 +281,9 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 			this.length         = Math.max(0, localLen);
 			this.bytesLowBound  = this.position       = PipeReader.readBytesPosition(pipe, loc);
 			this.backing        = PipeReader.readBytesBackingArray(pipe, loc); 
+			 if (null==this.backing) {
+		        	throw new UnsupportedOperationException("bad loc value of: "+loc);
+		        }
 			assert(this.backing!=null) : "The pipe must be init before use.";
 			this.bytesHighBound = pipe.blobMask & (position + length);
 			
@@ -665,6 +685,13 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
     public static <S extends MessageSchema<S>> int read(DataInputBlobReader<S> reader, byte[] b, int off, int len, int mask) {
     	assert(null!=reader.backing);
     	assert(null!=b);
+    	
+    	if (null==reader.backing) {
+    		throw new NullPointerException("hack test");
+    	}
+    	if (null==b) {
+    		throw new NullPointerException("hack test");
+    	}
     	
         int max = bytesRemaining(reader);
         if (len > max) {
