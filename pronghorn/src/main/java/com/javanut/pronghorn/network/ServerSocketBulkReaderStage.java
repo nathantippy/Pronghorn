@@ -419,7 +419,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 							return 1;
 						}
 	                } else {
-	                	//logger.info("client disconnected, so release");
+	                	logger.info("client disconnected, so release connection");
 	                
 	                	if (null!=cc) {
 	                		cc.clearPoolReservation();
@@ -488,9 +488,13 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			
 			if (messageType>=0) {
 				
+				int unstoreBlobWorkingHeadPosition = Pipe.unstoreBlobWorkingHeadPosition(target);
+				if (unstoreBlobWorkingHeadPosition<0) {
+					new Exception("Internal error, called unstore too many times, no data but len is: "+len).printStackTrace();
+				}
 				len = publishSingleMessage(target,
 						             channelId, 
-						             Pipe.unstoreBlobWorkingHeadPosition(target), len);     
+						             unstoreBlobWorkingHeadPosition, len);     
 				
 				
 			} else {

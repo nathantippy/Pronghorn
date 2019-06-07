@@ -199,9 +199,9 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 		assert(this.backing!=null) : 
 			"The pipe "+(1==(meta>>31)?" constant array ": " blob ")+"must be defined before use.\n "+this.pipe;
 			
-		if (null==this.backing) {
-	        	throw new UnsupportedOperationException("bad loc value of: "+meta);
-	    }
+
+		
+		
 		 
 		this.bytesHighBound = this.pipe.blobMask & (this.position + this.length);
 		

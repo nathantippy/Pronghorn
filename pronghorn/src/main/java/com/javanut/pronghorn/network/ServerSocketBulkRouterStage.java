@@ -500,10 +500,17 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
     	
 		if (Pipe.hasRoomForWrite(targetPipe, reqPumpPipeSpace)) {
 			
-			//we have room so now read the data...
-			
-			Pipe.takeMsgIdx(input);
+			//we have room so now read the data...			
+			int localMsgIdx = Pipe.takeMsgIdx(input);
+			if (localMsgIdx != SocketDataSchema.MSG_DATA_210) {
+				throw new UnsupportedOperationException("unknown msgId: "+localMsgIdx);
+			}
+
+			assert(SocketDataSchema.MSG_DATA_210 == localMsgIdx);
         	long channelId2 = Pipe.takeLong(input);
+        	if (channelId2!=channelId) {
+        		throw new UnsupportedOperationException("internal error, expected "+channelId+" but found "+channelId2);
+        	}
         	assert(channelId == channelId2) : "internal error";
         	long arrivalTime = Pipe.takeLong(input);
         	long hash = Pipe.takeLong(input);
@@ -539,7 +546,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 					if (len>0) {
 						int result = publishData(channelId, sequenceNo, targetPipe, len, newBeginning)
 								? 1 : 0; //if all published we return 1
-						if (0==result) {
+						if (0==result) {//TODO: not happening any longer...
 	                		throw new UnsupportedOperationException();
 	                	}
 						
@@ -549,7 +556,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 						return 1;
 					}
                 } else {
-                	//logger.info("client disconnected, so release");
+                	logger.info("client disconnected, so release connection");
                 
                 	if (null!=cc) {
                 		cc.clearPoolReservation();

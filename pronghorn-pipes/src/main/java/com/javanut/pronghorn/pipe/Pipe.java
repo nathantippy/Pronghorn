@@ -3986,6 +3986,9 @@ public class Pipe<T extends MessageSchema<T>> {
     	
     	if (1==idx) {
     		new Exception("we are not fully done testing this feature").printStackTrace(); 
+    		if (null == pipe.blobRingLookup[idx]) {
+    			throw new UnsupportedOperationException("no backing data, bad loc value of: "+meta);
+    		}
     	}
     	
         return pipe.blobRingLookup[idx];
