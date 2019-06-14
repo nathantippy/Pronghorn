@@ -123,7 +123,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    		//ignore, not supported on this platform
 	    	}
 			
-	    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
+	//    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
 			
 	        ServerCoordinator.newSocketChannelHolder(coordinator);
  
@@ -145,13 +145,13 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 				}
 	    };    
 
-	    private SelectedKeyHashMapHolder selectedKeyHolder;
-		private final BiConsumer keyVisitor = new BiConsumer() {
-			@Override
-			public void accept(Object k, Object v) {
-				selectionKeyAction.accept((SelectionKey)k);
-			}
-		};
+//	    private SelectedKeyHashMapHolder selectedKeyHolder;
+//		private final BiConsumer keyVisitor = new BiConsumer() {
+//			@Override
+//			public void accept(Object k, Object v) {
+//				selectionKeyAction.accept((SelectionKey)k);
+//			}
+//		};
 
 	    @Override
 	    public void run() {
@@ -177,13 +177,13 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 		    	            doneSelectors.clear();
 		    	            hasRoomForMore = true; //set this up before we visit
 		    	            
-		    	            HashMap<SelectionKey, ?> keyMap = selectedKeyHolder.selectedKeyMap(selectedKeys);
-		    	            if (null!=keyMap) {
-		    	               keyMap.forEach(keyVisitor);
-		    	            } else {
+//		    	            HashMap<SelectionKey, ?> keyMap = selectedKeyHolder.selectedKeyMap(selectedKeys);
+//		    	            if (null!=keyMap) {
+//		    	               keyMap.forEach(keyVisitor);
+//		    	            } else {
 		    	         	   //fall back to old if the map can not be found.
 		    	         	   selectedKeys.forEach(selectionKeyAction);
-		    	            }
+//		    	            }
 
 		    	            removeDoneKeys(selectedKeys);
 		    	            
@@ -354,7 +354,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    	ByteBuffer[] targetBuffer = null;
 	    	long temp = 0;
 
-			if (Pipe.hasRoomForWrite(outputPipe, reqPumpPipeSpace)) {
+	    	SocketChannel sourceChannel = cc.getSocketChannel();
+			if (Pipe.hasRoomForWrite(outputPipe, reqPumpPipeSpace) && (null!=sourceChannel)) {
 				//only call nano if we are consuming this one.
 				cc.setLastUsedTime(System.nanoTime());//needed to know when this connection can be disposed
 				
@@ -382,7 +383,6 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                //read as much as we can, one read is often not enough for high volume
 	                boolean isStreaming = false; //TODO: expose this switch..
 	                
-	                SocketChannel sourceChannel = cc.getSocketChannel();
 	                do {
 	                	temp = sourceChannel.read(targetBuffer);
 	                	if (temp>0){
@@ -419,7 +419,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 							return 1;
 						}
 	                } else {
-	                	logger.info("client disconnected, so release connection");
+	                //	logger.trace("client disconnected, so release connection");
 	                
 	                	if (null!=cc) {
 	                		cc.clearPoolReservation();
@@ -518,27 +518,30 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    	while (remainLen>0 && Pipe.hasRoomForWrite(targetPipe)) {
 	    		
 	    		    int localLen = (int)Math.min(targetPipe.maxVarLen, remainLen);     
-	    		    
-		            final int size = Pipe.addMsgIdx(targetPipe, messageType); //SocketDataSchema.MSG_DATA_210 ;             
-		            Pipe.addLongValue(channelId, targetPipe);  
-		            Pipe.addLongValue(System.nanoTime(), targetPipe);
-			        Pipe.addLongValue(0, targetPipe); //TODO: hash space holder. NOTE: upgrade this
-					
-			        if (showRequests) {	        	
-			        	showRequests(targetPipe, channelId, pos, localLen);
-			        }
-			        		        
-			        Pipe.moveBlobPointerAndRecordPosAndLength(pos, (int)localLen, targetPipe);  
-			        
-			        //all breaks are detected by the router not here
-			        //(section 4.1 of RFC 2616) end of header is \r\n\r\n but some may only send \n\n
-			        //
-		  
-			        Pipe.confirmLowLevelWrite(targetPipe, size);
-			        Pipe.publishWrites(targetPipe);
-			        
-			        remainLen -= localLen;
-			        pos += localLen;	        
+	    		    if (localLen>0) {	    		    
+			            final int size = Pipe.addMsgIdx(targetPipe, messageType); //SocketDataSchema.MSG_DATA_210 ;             
+			            Pipe.addLongValue(channelId, targetPipe);  
+			            Pipe.addLongValue(System.nanoTime(), targetPipe);
+				        Pipe.addLongValue(0, targetPipe); //TODO: hash space holder. NOTE: upgrade this
+						
+				        if (showRequests) {	        	
+				        	showRequests(targetPipe, channelId, pos, localLen);
+				        }
+				        		        
+				        Pipe.moveBlobPointerAndRecordPosAndLength(pos, (int)localLen, targetPipe);  
+				        
+				        //all breaks are detected by the router not here
+				        //(section 4.1 of RFC 2616) end of header is \r\n\r\n but some may only send \n\n
+				        //
+			  
+				        Pipe.confirmLowLevelWrite(targetPipe, size);
+				        Pipe.publishWrites(targetPipe);
+				        
+				        remainLen -= localLen;
+				        pos += localLen;	        
+	    		    } else {
+	    		    	break;
+	    		    }
 	    	}
 	    	Pipe.publishAllBatchedWrites(targetPipe); //Ensure we have nothing waiting, key for watchers.
 	    	return remainLen;

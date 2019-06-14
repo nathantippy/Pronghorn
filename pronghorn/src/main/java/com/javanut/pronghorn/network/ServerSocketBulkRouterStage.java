@@ -166,9 +166,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 	    	        		
 	    	        		Pipe.takeMsgIdx(input);
 	    	        		long channelId = Pipe.takeLong(input);
-	    	        		
-	    	        		System.out.println("send out disconnect");
-	    	        		
+	    	        			    	        		
 	    	        		Pipe.confirmLowLevelRead(input, Pipe.sizeOf(input, msgIdx));
 							Pipe.releaseReadLock(input);
 							
@@ -176,43 +174,53 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 	    	 
 	    	        		if (msgIdx != -1) {
 	    	        			
-	    	        			if (msgIdx != SocketDataSchema.MSG_DATA_210) {
+	    	        			if (msgIdx == SocketDataSchema.MSG_DATA_210) {
+
+	    	        				int peekLen = Pipe.peekInt(input, 0xFF & SocketDataSchema.MSG_DATA_210_FIELD_PAYLOAD_204);
+	    	        				//TODO: this protection is odd and we need to do a deeper investigation of why it is required.
+	    	        				if (peekLen>=0) {
+	    	        					
+			    	        			long channelId = Pipe.peekLong(input, 0xFF & SocketDataSchema.MSG_DATA_210_FIELD_CONNECTIONID_201);
+		      	        	
+										assert(channelId>=0);
+										BaseConnection cc = coordinator.lookupConnectionById(channelId);
+										
+										//logger.info("\nnew key selection in reader for connection {}",channelId);
+										
+										if (null != cc) {
+											if (!coordinator.isTLS) {	
+											} else {
+												handshakeTaskOrWrap(cc);
+											}		
+											
+											if (processConnection2(cc, input)) {
+											
+												Pipe.confirmLowLevelRead(input, Pipe.sizeOf(input, msgIdx));
+												Pipe.releaseReadLock(input);
+											
+												showLocks = true;
+												lastTime = System.currentTimeMillis();
+											} else {
+												iter--;
+											}
+										} else {
+											Pipe.skipNextFragment(input);
+											//if this selection was closed then remove it from the selections
+											
+											if (PoolIdx.getIfReserved(responsePipeLinePool,channelId)>=0) {
+												responsePipeLinePool.release(channelId);
+											}
+										}
+	    	        				} else {
+	    	        					releasePipesForUse();//clear now so select will pick up more	    	        					 
+	    	        					//invalid read ahead, len data was not yet stored.
+	    	        					
+	    	        					break;
+	    	        				}
+									
+	    	        			} else {
 	    	        				throw new UnsupportedOperationException("unknown msgId: "+msgIdx);
 	    	        			}
-	
-	    	        			long channelId = Pipe.peekLong(input, 0xFF & SocketDataSchema.MSG_DATA_210_FIELD_CONNECTIONID_201);
-      	        	
-								assert(channelId>=0);
-								BaseConnection cc = coordinator.lookupConnectionById(channelId);
-								
-								//logger.info("\nnew key selection in reader for connection {}",channelId);
-								
-								if (null != cc) {
-									if (!coordinator.isTLS) {	
-									} else {
-										handshakeTaskOrWrap(cc);
-									}		
-									
-									//********************* URGENT FIX...
-									//TODO: not sure pump always works with pipe out size vs in size..
-									if (processConnection2(cc, input)) {
-									
-										Pipe.confirmLowLevelRead(input, Pipe.sizeOf(input, msgIdx));
-										Pipe.releaseReadLock(input);
-									
-										showLocks = true;
-										lastTime = System.currentTimeMillis();
-									} else {
-										iter--;
-									}
-								} else {
-									Pipe.skipNextFragment(input);
-									//if this selection was closed then remove it from the selections
-									
-									if (PoolIdx.getIfReserved(responsePipeLinePool,channelId)>=0) {
-										responsePipeLinePool.release(channelId);
-									}
-								}
 			
 		    	        	} else {
 		    	        		Pipe.skipNextFragment(input);
@@ -556,7 +564,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 						return 1;
 					}
                 } else {
-                	logger.info("client disconnected, so release connection");
+                	//logger.trace("client disconnected, so release connection");
                 
                 	if (null!=cc) {
                 		cc.clearPoolReservation();

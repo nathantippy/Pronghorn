@@ -14,14 +14,16 @@ public class SelectionKeyHashMap extends HashMap<SelectionKey, Object> {
 	//NOTE: this is built on identity equals.
 	//NOTE: this is garbage free
 	
-	int count;
-	int empty;
-	SelectionKey[] keys;
-	Object[] values;
-		
+	private int count;
+	private int empty;
+	private SelectionKey[] keys;
+	private Object[] values;
+	private final UnsupportedOperationException capturedStack;
+	
 	public SelectionKeyHashMap(int initSize) {
 		keys = new SelectionKey[initSize];
 		values = new Object[initSize];
+		capturedStack = new UnsupportedOperationException("init to size of "+initSize+" but it needs to be larger");		
 	}
 	
 	/**
@@ -55,13 +57,14 @@ public class SelectionKeyHashMap extends HashMap<SelectionKey, Object> {
 		}
 		
 		//may need to grow
-		if (count==keys.length) {
-			SelectionKey[] newKeys  = new SelectionKey[count*2];
-			Object[] newObjectalues = new Object[count*2];
-			System.arraycopy(keys, 0, newKeys, 0, keys.length);
-			System.arraycopy(values, 0, newObjectalues, 0, values.length);
-			keys = newKeys;
-			values = newObjectalues;			
+		if (count>=keys.length) {
+			throw capturedStack; //must not allocate new array since this would require GC and a lock
+//			SelectionKey[] newKeys  = new SelectionKey[count*2];
+//			Object[] newObjectalues = new Object[count*2];
+//			System.arraycopy(keys, 0, newKeys, 0, keys.length);
+//			System.arraycopy(values, 0, newObjectalues, 0, values.length);
+//			keys = newKeys;
+//			values = newObjectalues;			
 		}
 		keys[count] = k;
 		values[count] = v;
@@ -94,6 +97,18 @@ public class SelectionKeyHashMap extends HashMap<SelectionKey, Object> {
 		SelectionKeyHashMappable selectionKeyHashMappable = (SelectionKeyHashMappable)((SelectionKey)k).attachment();
 		int pos = selectionKeyHashMappable.skPosition();
 		if (pos>=0) {
+			//may need to grow
+			if (pos>=keys.length) {
+				throw capturedStack; //must not allocate new array since this would require GC and a lock
+				
+//				SelectionKey[] newKeys  = new SelectionKey[pos*2];
+//				Object[] newObjectalues = new Object[pos*2];
+//				System.arraycopy(keys, 0, newKeys, 0, keys.length);
+//				System.arraycopy(values, 0, newObjectalues, 0, values.length);
+//				keys = newKeys;
+//				values = newObjectalues;			
+			}
+			
 			keys[pos] = null;
 			selectionKeyHashMappable.skPosition(-1);
 			
