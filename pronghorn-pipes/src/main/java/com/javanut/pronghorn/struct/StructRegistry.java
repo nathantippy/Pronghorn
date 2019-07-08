@@ -771,13 +771,17 @@ public class StructRegistry { //prong struct store
 	}
 
 	public int storeAlias(int sessionId, int newStructId) {
-		if (!IntHashTable.setItem(aliasStructIdTable, sessionId, newStructId)) {
-			aliasStructIdTable = IntHashTable.doubleSize(aliasStructIdTable);					
+		if (sessionId!=0) {
 			if (!IntHashTable.setItem(aliasStructIdTable, sessionId, newStructId)) {
-				logger.warn("internal error, unable to store new struct id for reuse.", new Exception());
-			}
-		}				
-		return newStructId;
+				aliasStructIdTable = IntHashTable.doubleSize(aliasStructIdTable);					
+				if (!IntHashTable.setItem(aliasStructIdTable, sessionId, newStructId)) {
+					logger.warn("internal error, unable to store new alias "+sessionId+" for struct id "+newStructId, new Exception());
+				}
+			}				
+			return newStructId;
+		} else {
+			throw new UnsupportedOperationException("internal error, sessionId must not be zero.");
+		}
 	}
 	
 }

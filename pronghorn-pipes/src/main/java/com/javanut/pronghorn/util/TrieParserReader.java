@@ -842,21 +842,21 @@ public class TrieParserReader {
 			while (--r >= 0) {		
 				
 				
-//				//repeating this if is probably a bad idea lets do a logic approach instead
-//				if ((caseMask & data[t11++]) != (caseMask & 0xFF & source[srcMask & (t21++)]) ) {
-//					return false;
-//				}				
+				//repeating this if is probably a bad idea lets do a logic approach instead
+				if ((caseMask & data[t11++]) != (caseMask & 0xFF & source[srcMask & (t21++)]) ) {
+					return false;
+				}				
 				
 				//xor
-				total |= (((caseMask & data[t11++]) ^ (caseMask & 0xFF & source[srcMask & (t21++)]) ));
+				//total |= (((caseMask & data[t11++]) ^ (caseMask & 0xFF & source[srcMask & (t21++)]) ));
 				
 				
 			}
-			if (total==0) {
+			//if (total==0) {
 				reader.pos = t1;
 				reader.localSourcePos = t2;
 				return true;
-			}
+			//}
 		}
 		
 		return false;			

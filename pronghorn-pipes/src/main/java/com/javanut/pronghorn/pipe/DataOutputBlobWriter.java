@@ -158,7 +158,7 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     public static <T extends MessageSchema<T>> boolean tryClearIntBackData(DataOutputBlobWriter<T> writer, int intCount) {	
     	int bytes = (2+intCount)*4;//one for the schema index
     	
-    	Pipe.validateVarLength(writer.getPipe(), bytes);
+    	assert(Pipe.validateVarLength(writer.getPipe(), bytes));
     	
     	int temp = writer.backPosition-bytes;
     	if (temp >= writer.activePosition) {
