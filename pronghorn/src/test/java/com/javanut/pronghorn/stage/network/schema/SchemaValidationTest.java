@@ -17,8 +17,6 @@ import com.javanut.pronghorn.network.schema.NetPayloadSchema;
 import com.javanut.pronghorn.network.schema.NetResponseSchema;
 import com.javanut.pronghorn.network.schema.ReleaseSchema;
 import com.javanut.pronghorn.network.schema.SocketDataSchema;
-import com.javanut.pronghorn.network.schema.TwitterEventSchema;
-import com.javanut.pronghorn.network.schema.TwitterStreamControlSchema;
 import com.javanut.pronghorn.pipe.util.build.FROMValidation;
 
 public class SchemaValidationTest {
@@ -88,14 +86,4 @@ public class SchemaValidationTest {
         assertTrue(FROMValidation.checkSchema("/MQTTClientResponse.xml", MQTTClientResponseSchema.class));
     }
     
-    
-    @Test
-    public void testEventsFROMMatchesXML() {
-        assertTrue(FROMValidation.checkSchema("/TwitterEvent.xml", TwitterEventSchema.class));
-    }
-
-    @Test
-    public void testTwitterUserStreamControlSchemaFROMMatchesXML() {
-        assertTrue(FROMValidation.checkSchema("/TwitterUserStreamControl.xml", TwitterStreamControlSchema.class));
-    }
 }

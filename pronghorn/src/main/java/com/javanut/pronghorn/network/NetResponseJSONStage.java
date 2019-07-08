@@ -131,8 +131,8 @@ public class NetResponseJSONStage<M extends MessageSchema<M>, T extends Enum<T>&
 						
 						int status = stream.readShort();
 						//System.err.println("got response with status "+status);
-						
-						//logger.info("old reader value should be zero was "+reader.sourceLen);
+						//stream.debug();
+					
 						
 						//skip over all the headers, no need to read them at this time
 						DataInputBlobReader.position(stream, stream.readFromEndLastInt(PAYLOAD_INDEX_OFFSET));

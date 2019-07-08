@@ -2,11 +2,11 @@ const BW = 2; // border width
 const BW2 = BW * 2; // border width times 2
 //const DOT_URL = `http://${host}:${port}/graph.dot`;
 const DOT_URL = 'graph.dot';
-const ZOOM_DELTA = 20;
+const ZOOM_DELTA = 40;
 //const ZOOM_DELTA = 200;
 //const ZOOM_FROM_CENTER = false;
 const ZOOM_FROM_CENTER = true;
-const ZOOM_MAX = 500;
+const ZOOM_MAX = 5000;
 const MAX_SCALE = 0.4;
 
 const speedMap = {
