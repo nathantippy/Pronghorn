@@ -21,7 +21,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * Represents a MQTT client and perfroms required client responsibilities according to specs.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class MQTTClientStage extends PronghornStage {
 

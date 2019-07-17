@@ -35,7 +35,7 @@ import com.javanut.pronghorn.util.ServiceObjectHolder;
  * No protocol specifics are found in this class, only socket usage logic.
  * 
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ServerNewConnectionStage extends PronghornStage{
         

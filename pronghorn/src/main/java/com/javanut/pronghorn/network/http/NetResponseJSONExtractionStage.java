@@ -24,7 +24,7 @@ import com.javanut.pronghorn.util.parse.JSONStreamVisitorToChannel;
  * a ServerResponseSchema onto a ServerResponseSchema pipe.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class NetResponseJSONExtractionStage extends PronghornStage {
 	

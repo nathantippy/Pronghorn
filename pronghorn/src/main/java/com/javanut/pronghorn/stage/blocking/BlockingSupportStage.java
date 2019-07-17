@@ -15,7 +15,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * until a response is received.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 @Deprecated
 public class BlockingSupportStage<T extends MessageSchema<T>, P extends MessageSchema<P>, Q extends MessageSchema<Q>> extends PronghornStage {

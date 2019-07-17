@@ -23,7 +23,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  *  Go from HTTP-based server directly to web sockets for massive speed improvements.
  *
  *  @author Nathan Tippy
- *  @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ *  @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class UpgradeToWebSocketStage extends PronghornStage {
 

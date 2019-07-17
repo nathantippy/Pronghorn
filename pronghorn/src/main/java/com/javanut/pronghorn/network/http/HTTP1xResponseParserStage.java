@@ -32,7 +32,7 @@ import com.javanut.pronghorn.util.TrieParserReader;
  * to be sent back to a request stage.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class HTTP1xResponseParserStage extends PronghornStage {
 	private static final int SIZE_TO_WRITE = 2*Pipe.sizeOf(NetResponseSchema.instance, NetResponseSchema.MSG_CONTINUATION_102);

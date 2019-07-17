@@ -31,7 +31,7 @@ import com.javanut.pronghorn.util.ServiceObjectHolder;
  * Sends the data in order to the right pool entry for encryption to be applied down stream.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering stage
     

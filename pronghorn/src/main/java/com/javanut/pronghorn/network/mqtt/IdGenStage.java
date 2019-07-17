@@ -23,7 +23,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * and the high value holding the exclusive stop.
  * 
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  *
  */
 public class IdGenStage extends PronghornStage {

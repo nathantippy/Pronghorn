@@ -22,7 +22,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * Reads files from disk as blobs based on an input path.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class FileBlobReadStage extends PronghornStage {
 

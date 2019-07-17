@@ -18,7 +18,7 @@ import com.javanut.pronghorn.util.AppendableByteWriter;
  * This is needed for the telemetry.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class PipeMonitorCollectorStage extends PronghornStage {
 

@@ -14,7 +14,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * This data is passed along for the telemetry.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class PipeMonitorStage extends PronghornStage {
 

@@ -24,7 +24,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * Replays a sequential read/write based on store requests and load responses.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 
 public class SequentialReplayerStage extends PronghornStage {

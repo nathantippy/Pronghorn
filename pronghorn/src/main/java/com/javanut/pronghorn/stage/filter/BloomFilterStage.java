@@ -12,7 +12,7 @@ import com.javanut.pronghorn.util.RollingBloomFilter;
  * Applies Bloom Filter. See the Pronghorn documentation for examples.
  * @param <T>
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class BloomFilterStage<T extends MessageSchema<T>> extends PronghornStage {
 

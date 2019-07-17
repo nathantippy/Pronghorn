@@ -18,7 +18,7 @@ import com.javanut.pronghorn.util.Appendables;
  * Consumes meta messages and produces new XML templates catalog upon receiving a flush message.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class MetaMessagesToCSVStage extends PronghornStage {
 

@@ -10,7 +10,7 @@ import com.javanut.pronghorn.pipe.PipeWriter;
  * Defines alert notices.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class AlertNoticeSchema extends MessageSchema<AlertNoticeSchema> {
 

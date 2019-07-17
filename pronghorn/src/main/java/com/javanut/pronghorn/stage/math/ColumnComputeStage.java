@@ -15,7 +15,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * @param <C>
  * @param <R>
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ColumnComputeStage<M extends MatrixSchema<M>, C extends MatrixSchema<C>, R extends MatrixSchema<R> > extends PronghornStage {
 

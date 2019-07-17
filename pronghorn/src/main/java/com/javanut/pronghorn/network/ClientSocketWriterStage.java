@@ -20,7 +20,7 @@ import com.javanut.pronghorn.util.Appendables;
  * Write to a socket using a client coordinator.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ClientSocketWriterStage extends PronghornStage {
 

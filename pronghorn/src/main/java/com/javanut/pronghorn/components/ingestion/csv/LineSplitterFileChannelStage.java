@@ -13,7 +13,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * _no-docs_
  * Splits lines in file.
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class LineSplitterFileChannelStage extends LineSplitterByteBufferStage {
 

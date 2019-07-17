@@ -25,7 +25,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * @param <H>
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class PipeMonitorModuleStage<T extends Enum<T> & HTTPContentType,
 									R extends Enum<R> & HTTPRevision,

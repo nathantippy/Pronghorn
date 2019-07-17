@@ -12,7 +12,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * Filter messages based on flags.
  * @param <T>
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class FlagFilterStage<T extends MessageSchema<T>> extends PronghornStage {
 

@@ -28,7 +28,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * a UTF-8 REST responder.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public abstract class ByteArrayPayloadResponseStage <   
                                 T extends Enum<T> & HTTPContentType,

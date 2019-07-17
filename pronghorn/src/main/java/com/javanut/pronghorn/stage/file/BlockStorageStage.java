@@ -22,7 +22,7 @@ import com.javanut.pronghorn.util.Appendables;
  * Store blocks at specific positions within the backing file.
  * 
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class BlockStorageStage extends PronghornStage {
 

@@ -32,7 +32,7 @@ import com.javanut.pronghorn.util.SelectedKeyHashMapHolder;
  * it is a client.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ClientSocketReaderStage extends PronghornStage {	
 	

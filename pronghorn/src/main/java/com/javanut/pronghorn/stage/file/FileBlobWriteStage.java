@@ -28,7 +28,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * Writes data to file on disk (in blobs).
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class FileBlobWriteStage extends PronghornStage{
 

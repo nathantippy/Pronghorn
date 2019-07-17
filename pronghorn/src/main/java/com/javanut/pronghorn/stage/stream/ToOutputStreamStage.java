@@ -20,7 +20,7 @@ import com.javanut.pronghorn.util.ZeroCopyByteArrayOutputStream;
  * Takes the RawDataSchema on the input pipe and writes it to an output stream.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ToOutputStreamStage extends PronghornStage {
 

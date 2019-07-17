@@ -1,11 +1,6 @@
 package ${package};
 
-/**
- * *******************************************************************
- * For pronghorn support, training or feature reqeusts please contact:
- *   info@objectcomputing.com   (314) 579-0066
- * *******************************************************************
- */
+
 
 import com.javanut.pronghorn.pipe.Pipe;
 import com.javanut.pronghorn.pipe.RawDataSchema;

@@ -36,7 +36,7 @@ import com.javanut.pronghorn.util.TrieParserReader;
  * Encodes client message for sending to server.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class MQTTClientToServerEncodeStage extends PronghornStage {
 

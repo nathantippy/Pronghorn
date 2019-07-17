@@ -16,7 +16,7 @@ import com.javanut.pronghorn.util.Appendables;
  * @param <A>
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class NetResponseDumpStage<A extends Appendable> extends PronghornStage {
 

@@ -50,7 +50,7 @@ import com.javanut.pronghorn.util.TrieParserReader;
  * Provides HTTP file transfer, i.e. browser requests file and this stage returns it.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class FileReadModuleStage<       T extends Enum<T> & HTTPContentType,
                                         R extends Enum<R> & HTTPRevision,

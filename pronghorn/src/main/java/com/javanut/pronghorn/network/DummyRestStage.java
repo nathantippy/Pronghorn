@@ -15,7 +15,7 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
  * worrying about implementation, or to test concurrent behavior.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class DummyRestStage extends PronghornStage {
 

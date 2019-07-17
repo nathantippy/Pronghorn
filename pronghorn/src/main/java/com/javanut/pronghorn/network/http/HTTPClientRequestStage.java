@@ -20,7 +20,7 @@ import com.javanut.pronghorn.struct.StructRegistry;
  * Takes a HTTP client request and responds with a net payload using a TrieParserReader.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class HTTPClientRequestStage extends PronghornStage {
 

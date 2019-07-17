@@ -33,7 +33,7 @@ import com.javanut.pronghorn.util.AppendableByteWriter;
  * @param <H> headers
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public abstract class AbstractAppendablePayloadResponseStage <   
                                 T extends Enum<T> & HTTPContentType,

@@ -17,7 +17,7 @@ import com.javanut.pronghorn.util.Appendables;
  * easier output.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class HTTPLogUnificationStage extends PronghornStage {
 

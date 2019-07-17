@@ -24,14 +24,13 @@ import com.javanut.pronghorn.util.ServiceObjectHolder;
  * Server-side stage that writes back to the socket. Useful for building a server.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ServerSocketWriterStage extends PronghornStage {
     
     private static Logger logger = LoggerFactory.getLogger(ServerSocketWriterStage.class);
     public static boolean showWrites = false;
-    //must work with only 16 in flight!!
- 	public static long hardLimtNS = 20_000L;//20 micros -- must be fast enough for the telemetry set now to 100ms
+ 	
     //also note however data can be written earlier if:
 	//   1. the buffer has run out of space 
 	//   2. if the pipe has no more data.
@@ -123,14 +122,21 @@ public class ServerSocketWriterStage extends PronghornStage {
           
     }
     
+    public static long HARD_LIMIT_NS = 500_000L;
+    
     @Override
     public void startup() {
+    	
+    	long hardLimtNS = isMonitor() 
+    			           ? 20_000L //20 micros -- must be fast enough for the telemetry set now to 100ms
+    			           : HARD_LIMIT_NS;   //normal web traffic 5 per ms  	
+    	
     	
     	final Number rate = (Number)GraphManager.getNota(graphManager, this, GraphManager.SCHEDULE_RATE, null);
     	    	
     	this.maxBatchCount = Math.max(1, ( null==rate ? 16 : (int)(hardLimtNS/rate.longValue()))); 
     	
-    	//logger.info("server socket write batch count "+maxBatchCount+" cycle rate "+rate.longValue()); // 100_000;
+    	//logger.info("\nserver socket write batch count "+maxBatchCount+" hardLimit "+hardLimtNS+"/ cycle rate "+rate.longValue()); // 100_000;
     	
     	int c = input.length;
 
@@ -257,9 +263,13 @@ public class ServerSocketWriterStage extends PronghornStage {
 				writeToChannelBatchCountDown[x]=-4;
 				writeToChannelMsg[x] = -1;
 				
-				if (!(doingWork = writeDataToChannel(x))) {
+				if (doingWork = writeDataToChannel(x)) {
+					writeToChannelBatchCountDown[x] = maxBatchCount;
+					
+				}	else {
 					//this channel did not write but we need to check the others		    		
-				}	
+					
+				}
 			} else {
 				
 				//must set to true to ensure we count up the iterations above.

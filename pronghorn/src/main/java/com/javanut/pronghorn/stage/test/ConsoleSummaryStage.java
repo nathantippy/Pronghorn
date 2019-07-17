@@ -18,7 +18,7 @@ import com.javanut.pronghorn.util.Appendables;
  * @param <T>
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class ConsoleSummaryStage<T extends MessageSchema<T>> extends PronghornStage {
 

@@ -14,7 +14,7 @@ import com.javanut.pronghorn.util.Appendables;
  * The data is not reported anyway.
  *
  * @author Nathan Tippy
- * @see <a href="https://github.com/objectcomputing/Pronghorn">Pronghorn</a>
+ * @see <a href="https://github.com/nathantippy/Pronghorn">Pronghorn</a>
  */
 public class PipeCleanerStage<T extends MessageSchema<T>> extends PronghornStage {
 
