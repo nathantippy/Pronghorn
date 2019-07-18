@@ -55,8 +55,10 @@ public class ServerSocketWriterStage extends PronghornStage {
     private int maxBatchCount;
 
 	private static final boolean enableWriteBatching = true;
-    
 
+    public static long HARD_LIMIT_NS = 500_000L;
+    public static float BASE_ADJUST = 4;
+    
 	private final boolean debugWithSlowWrites = false;// false; //TODO: set from coordinator, NOTE: this is a critical piece of the tests
 	private final int debugMaxBlockSize = 7;//50000;
 	
@@ -97,7 +99,7 @@ public class ServerSocketWriterStage extends PronghornStage {
         
         Number dsr = graphManager.defaultScheduleRate();
         if (dsr!=null) {
-        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
+        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, (long)(dsr.longValue()*BASE_ADJUST), this);
         }
 
       
@@ -122,7 +124,6 @@ public class ServerSocketWriterStage extends PronghornStage {
           
     }
     
-    public static long HARD_LIMIT_NS = 500_000L;
     
     @Override
     public void startup() {
