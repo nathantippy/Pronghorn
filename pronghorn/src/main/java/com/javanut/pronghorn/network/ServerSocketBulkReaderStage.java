@@ -3,14 +3,14 @@ package com.javanut.pronghorn.network;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -23,7 +23,6 @@ import com.javanut.pronghorn.pipe.Pipe;
 import com.javanut.pronghorn.stage.PronghornStage;
 import com.javanut.pronghorn.stage.scheduling.GraphManager;
 import com.javanut.pronghorn.util.Appendables;
-import com.javanut.pronghorn.util.SelectedKeyHashMapHolder;
 
 
 public class ServerSocketBulkReaderStage extends PronghornStage {
@@ -36,8 +35,15 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 		protected ServerSocketBulkReaderStage(GraphManager graphManager, Pipe<SocketDataSchema>[] output, ServerCoordinator coordinator) {
 			super(graphManager, NONE, output);
 			
-	        this.coordinator = coordinator;
-	       
+			 this.dataReader = new ServerSocketBulkReaderStageDataReader(coordinator, new Consumer<SelectionKey>(){
+					@Override
+					public void accept(SelectionKey selection) {
+						
+						dataReader.hasRoomForMore &= processSelection(selection);						
+						dataReader.doneSelectors.add(selection);//remove them all..
+					}
+		    });
+	        
 	        this.label = "\n"+coordinator.host()+":"+coordinator.port()+"\n";
 	        
 	        this.output = output;
@@ -65,13 +71,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        GraphManager.addNota(graphManager, GraphManager.SLA_LATENCY, 100_000_000, this);
 	        
 	        
-
-	        
-	        try {//must be done early to ensure this is ready before the other stages startup.
-	        	coordinator.registerSelector(selector = Selector.open());
-	        } catch (IOException e) {
-	        	throw new RuntimeException(e);
-	        }
+	        dataReader.registerSelector();
 	        
 //			long gt = NetGraphBuilder.computeGroupsAndTracks(coordinator.moduleParallelism(), coordinator.isTLS);		 
 //			int groups = (int)((gt>>32)&Integer.MAX_VALUE);//same as count of SocketReaders
@@ -88,17 +88,12 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 
 	    private final Pipe<SocketDataSchema>[] output;
 	
-	    private final ServerCoordinator coordinator;
+	    private final ServerSocketBulkReaderStageDataReader dataReader;
 
-	    private final Selector selector;
-	
-	    
-	    public static boolean showRequests = false;
+		public static boolean showRequests = false;
 	    
 	    private boolean shutdownInProgress;
 	    private final String label;
-	    private Set<SelectionKey> selectedKeys;	
-	    private ArrayList<SelectionKey> doneSelectors = new ArrayList<SelectionKey>(100);
 	    	        
 	    @Override
 	    public String toString() {
@@ -125,8 +120,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			
 	//    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
 			
-	        ServerCoordinator.newSocketChannelHolder(coordinator);
- 
+	    	dataReader.generateSocketHolder();
+	      
 	      
 	    }
 	    
@@ -135,15 +130,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    	Pipe.publishEOF(output);	       
 	    }
 	    
-	    boolean hasRoomForMore = true;
-	    public final Consumer<SelectionKey> selectionKeyAction = new Consumer<SelectionKey>(){
-				@Override
-				public void accept(SelectionKey selection) {
-					hasRoomForMore &= processSelection(selection); 
-					
-					doneSelectors.add(selection);//remove them all..
-				}
-	    };    
+  
 
 //	    private SelectedKeyHashMapHolder selectedKeyHolder;
 //		private final BiConsumer keyVisitor = new BiConsumer() {
@@ -171,23 +158,21 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    	        ////////////////////////////////////////
 	    	    	int iter = 1;//if no data go around one more time..
 	    	    	do {
-		    	        if (hasNewDataToRead(selector)) { 
+		    	        if (hasNewDataToRead(dataReader.selector)) { 
 		    	        	iter = 1;
 		        	    		        	   		
-		    	            doneSelectors.clear();
-		    	            hasRoomForMore = true; //set this up before we visit
+		    	            dataReader.doneSelectors.clear();
+		    	            dataReader.hasRoomForMore = true; //set this up before we visit
 		    	            
-//		    	            HashMap<SelectionKey, ?> keyMap = selectedKeyHolder.selectedKeyMap(selectedKeys);
-//		    	            if (null!=keyMap) {
-//		    	               keyMap.forEach(keyVisitor);
-//		    	            } else {
-		    	         	   //fall back to old if the map can not be found.
-		    	         	   selectedKeys.forEach(selectionKeyAction);
-//		    	            }
-
-		    	            removeDoneKeys(selectedKeys);
+		    	            //stops early if we are out of room.
+		    	            Iterator<SelectionKey> it = dataReader.selectedKeys.iterator();
+		    	            while (dataReader.hasRoomForMore && it.hasNext()) {
+		    	            	dataReader.selectionKeyAction.accept(it.next());		    	            	
+		    	            }		    	            
+		    	   
+		    	            removeDoneKeys(dataReader.selectedKeys);
 		    	            
-		    	            if (!hasRoomForMore) {
+		    	            if (!dataReader.hasRoomForMore) {
 		    	            	return;
 		    	            } 
 		    	        }
@@ -213,7 +198,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 		private void removeDoneKeys(Set<SelectionKey> selectedKeys) {
 			//sad but this is the best way to remove these without allocating a new iterator
 			// the selectedKeys.removeAll(doneSelectors); will produce garbage upon every call
-			ArrayList<SelectionKey> doneSelectors2 = doneSelectors;
+			ArrayList<SelectionKey> doneSelectors2 = dataReader.doneSelectors;
 			int c = doneSelectors2.size();
 			while (--c>=0) {
 			    	selectedKeys.remove(doneSelectors2.get(c));
@@ -228,29 +213,28 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			
 			final long channelId = ((ConnectionContext)selection.attachment()).getChannelId();
 			assert(channelId>=0);
+			BaseConnection cc = dataReader.coordinator.lookupConnectionById(channelId);
+			Pipe<SocketDataSchema> pipe = output[(int)channelId%output.length];
 			//logger.info("\nnew key selection in reader for connection {}",channelId);
 			
-			return processSelectionImpl(selection, channelId, 
-					                    coordinator.lookupConnectionById(channelId), 
-					                    output[(int)channelId%output.length]);
-
-		}
-
-		private boolean processSelectionImpl(SelectionKey selection, 
-											final long channelId, BaseConnection cc,
-											Pipe<SocketDataSchema> pipe) {
 			if (null != cc) {
-				if (!coordinator.isTLS) {	
+				if (!dataReader.coordinator.isTLS) {	
 					return (pumpByteChannelIntoPipe(this, pipe, cc)==1);
 				} else {
 					handshakeTaskOrWrap(cc);
 					return (pumpByteChannelIntoPipe(this, pipe, cc)==1);
 				}		
 			} else {				
-				return processClosedConnection((SocketChannel) selection.channel(), channelId, pipe);
+				try {
+					((SocketChannel) selection.channel()).close();
+				} catch (IOException e) {				
+				}
+				
+				return true;
 			}
+
 		}
-		
+
 		private static void handshakeTaskOrWrap(BaseConnection cc) {
 			if (null!=cc && null!=cc.getEngine()) {
 				 HandshakeStatus handshakeStatus = cc.getEngine().getHandshakeStatus();
@@ -264,23 +248,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 		}
 		
 
-		private static boolean processClosedConnection(final SocketChannel socketChannel, long channelId, Pipe<SocketDataSchema> outputPipe) {
-
-			assert(validateClose(socketChannel, channelId));
-			try {
-				socketChannel.close();
-			} catch (IOException e) {				
-			}
-			//if this selection was closed then remove it from the selections
-			
-//TODO: send a close??
-			//if (PoolIdx.getIfReserved(responsePipeLinePool,channelId)>=0) {
-			//	responsePipeLinePool.release(channelId);
-			//}			
-
-			//doneSelectors.add(selection);//remove them all.
-			return true;
-		} 
+		 
 
 			
 		////////////////////////////////////////////////////////////////
@@ -322,7 +290,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        	//CAUTION - select now clears previous count and only returns the additional I/O operation counts which have become avail since the last time SelectNow was called
 	        	////////////        
 	        	if (selector.selectNow() > 0) {            	
-	            	selectedKeys = selector.selectedKeys();
+	            	dataReader.selectedKeys = selector.selectedKeys();
 	            	
 	            	//we often select ALL the sent fields so what is going wrong??
 	            	//System.out.println(selectedKeys.size()+" selection block "+System.currentTimeMillis()); 
@@ -342,6 +310,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 
 	    private int r1; //needed by assert
 	    private int r2; //needed by assert
+	    private int readSize = -2;
+	    private long totalRead = 0;
 	    
 	    //returns -1 for did not start, 0 for started, and 1 for finished all.
 	    private static int pumpByteChannelIntoPipe(
@@ -369,14 +339,20 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	            	if (units>0) {
 		            	int extras = (int)units/singleMessageSpace;
 		            	if (extras>0) {
-		            		readMaxSize += (extras*outputPipe.maxVarLen);
+		            		readMaxSize += (extras*(outputPipe.maxVarLen));
 		            	}
+	            	}
+	            	if (that.readSize==-2) {
+	            		that.readSize = sourceChannel.getOption(StandardSocketOptions.SO_RCVBUF);
+	            	}
+	            	if (that.readSize>10) {
+	            		//never attempt to read more than the known buffer.
+	            		readMaxSize = (int) Math.min(readMaxSize, that.readSize);
 	            	}
 
 	                //NOTE: the byte buffer is no longer than the valid maximum length but may be shorter based on end of wrap around
 					int wrkHeadPos = Pipe.storeBlobWorkingHeadPosition(outputPipe);
-					targetBuffer = Pipe.wrappedWritingBuffers(wrkHeadPos, 
-												outputPipe, readMaxSize);
+					targetBuffer = Pipe.wrappedWritingBuffers(wrkHeadPos, outputPipe, readMaxSize);
 	                       
 	                assert(that.collectRemainingCount(targetBuffer));
 	  
@@ -384,11 +360,14 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                boolean isStreaming = false; //TODO: expose this switch..
 	                
 	                do {
+	                	//System.out.println("rec buffer: "+that.readSize	+"  "+ 	targetBuffer[0].remaining()+" "+targetBuffer[1].remaining());
+	                	
 	                	temp = sourceChannel.read(targetBuffer);
 	                	if (temp>0){
 	                		len+=temp;
 	                	}
-	                	
+	                	that.totalRead += len;
+	                	//System.out.println("done read "+len+" total "+that.totalRead);
 	                } while (temp>0 && isStreaming); //for multiple in flight pipelined must keep reading...
 	                
 	                //784 needed for 16,  49 byes per request
@@ -548,7 +527,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    }
 
 		private void showRequests(Pipe<SocketDataSchema> targetPipe, long channelId, int pos, int localLen) {
-			if (!"Telemetry Server".equals(coordinator.serviceName())) {
+			if (!"Telemetry Server".equals(dataReader.coordinator.serviceName())) {
 				try {
 			    	//ONLY VALID FOR UTF8
 			    	logger.info("/////////////\n/////Server read for channel {} bPos{} len {} \n{}\n/////////////////////",

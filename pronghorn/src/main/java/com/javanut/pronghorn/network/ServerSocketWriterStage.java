@@ -19,6 +19,8 @@ import com.javanut.pronghorn.stage.scheduling.GraphManager;
 import com.javanut.pronghorn.util.Appendables;
 import com.javanut.pronghorn.util.PipeWorkWatcher;
 import com.javanut.pronghorn.util.ServiceObjectHolder;
+import com.javanut.pronghorn.util.ma.MAvgRollerLong;
+import com.javanut.pronghorn.util.ma.RunningStdDev;
 
 /**
  * Server-side stage that writes back to the socket. Useful for building a server.
@@ -56,8 +58,8 @@ public class ServerSocketWriterStage extends PronghornStage {
 
 	private static final boolean enableWriteBatching = true;
 
-    public static long HARD_LIMIT_NS = 500_000L;
-    public static float BASE_ADJUST = 4;
+    public static long HARD_LIMIT_NS = 100_000L;
+    public static float BASE_ADJUST = 1f;
     
 	private final boolean debugWithSlowWrites = false;// false; //TODO: set from coordinator, NOTE: this is a critical piece of the tests
 	private final int debugMaxBlockSize = 7;//50000;
@@ -102,7 +104,6 @@ public class ServerSocketWriterStage extends PronghornStage {
         	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, (long)(dsr.longValue()*BASE_ADJUST), this);
         }
 
-      
     }
     
     
@@ -168,7 +169,7 @@ public class ServerSocketWriterStage extends PronghornStage {
     	while (PipeWorkWatcher.hasWork(pww)) {
     
     		this.didWorkMonitor.published();    	
-    		
+    		    		
 	    	do {
 		    	int g = pww.groups();
 				while (--g >= 0) {
@@ -309,7 +310,7 @@ public class ServerSocketWriterStage extends PronghornStage {
 		
 		activeMessageIds[idx] = activeMessageId;
 		
-		//logger.info("sever to write {}",activeMessageId);
+//		logger.info("sever to write {}",activeMessageId);
 		
 						
 		if ( (NetPayloadSchema.MSG_PLAIN_210 == activeMessageId) ||
@@ -382,6 +383,8 @@ public class ServerSocketWriterStage extends PronghornStage {
 	
     private void loadPayloadForXmit(final int msgIdx, final int idx) {
         
+    	//logger.info("loadPayloadForXmit");
+    	
     	final int msgSize = Pipe.sizeOf(input[idx], msgIdx);
     	
         Pipe<NetPayloadSchema> pipe = input[idx];
@@ -454,7 +457,12 @@ public class ServerSocketWriterStage extends PronghornStage {
 		ByteBuffer[] writeBuffs = Pipe.wrappedReadingDirectBuffers(pipe, meta, len);
 
 		try {//try immediate write first then store if we must
-			if (writeToChannel[idx].write(writeBuffs,0,2)==len) {
+			
+			long written;
+			if ((written = writeToChannel[idx].write(writeBuffs,0,2))==len) {
+	
+		    //	RunningStdDev.sample(writtenStd, written);
+		    //	System.out.println("written: "+writtenStd);
 				
 				//all wrote so clear
 				markDoneAndRelease(idx);
@@ -462,7 +470,11 @@ public class ServerSocketWriterStage extends PronghornStage {
 				Pipe.releaseReadLock(pipe);
 				return;
 				
-			}			
+			}
+//			else {
+//		    	RunningStdDev.sample(writtenStd, written);
+//		    	System.out.println("written: "+writtenStd);
+//			}
 		} catch (IOException e) {
 			//ignore we will try again after the wait.
 			logger.trace("error attempting to write",e);
@@ -628,7 +640,8 @@ public class ServerSocketWriterStage extends PronghornStage {
     			    : writeToDataChannelDebug(idx, true);   			    		
     }
 
-
+    private final RunningStdDev writtenStd = new RunningStdDev();
+    
 	private boolean writeDataToChannelQuick(int idx, boolean done) {
 		try {
 			
@@ -644,6 +657,8 @@ public class ServerSocketWriterStage extends PronghornStage {
 	    	if (bytesWritten>0) {
 	    		localWritten += bytesWritten;
 	    	}
+
+	    	
 			if (!source.hasRemaining()) {
 				markDoneAndRelease(idx);
 			} else {

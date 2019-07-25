@@ -55,10 +55,10 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	private int maxResponseSize = ICO_FILE_SIZE;//default of 2k
 	
 	//smaller to use less memory default use
-	private int maxQueueIn = 16; ///from router to modules
+	private int maxQueueIn = 8; ///from router to modules
 	private int maxQueueOut = 8; //from orderSuper to ChannelWriter
 	
-	private int socketToParserBlocks = 4;
+	private int socketToParserBlocks = 8;
 	private int minMemoryInputPipe = 1<<10; //1Kminum input pipe.
 	
 	public final PipeConfigManager pcmIn;
@@ -259,10 +259,7 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	@Override
 	public HTTPServerConfig setMaxQueueIn(int maxQueueIn) {
 		this.maxQueueIn = Math.max(this.maxQueueIn, maxQueueIn);		
-
-		//for after router and before module, limited since all the data is cached in previous pipe
-		//and we do not want to use all the memory here.
-		this.pcmIn.ensureSize(HTTPRequestSchema.class, Math.max(maxQueueIn,1<<12), 0); 
+		this.pcmIn.ensureSize(HTTPRequestSchema.class, this.maxQueueIn, 0); 
        
 		return this;
 	}
@@ -288,7 +285,7 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	public ServerPipesConfig buildServerConfig() {
 				
 		pcmOut.ensureSize(ServerResponseSchema.class, 4, 512);
-		int blocksFromSocket = 32;
+		int blocksFromSocket = 8;
 		int queueIn = 2; //2-1024
 		int queueOut = 4; //4-256
 				

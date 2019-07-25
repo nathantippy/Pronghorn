@@ -71,6 +71,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
         
         this.output = output;
         this.input = input;
+      
         this.releasePipes = ack;
 
         this.messageType = coordinator.isTLS ? NetPayloadSchema.MSG_ENCRYPTED_200 : NetPayloadSchema.MSG_PLAIN_210;
@@ -547,8 +548,8 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 				int wrkHeadPos = Pipe.storeBlobWorkingHeadPosition(targetPipe);
 				
 				//direct copy into target blob buffer
-				reader.readInto(Pipe.blob(targetPipe), wrkHeadPos, readMaxSize, Pipe.blobMask(targetPipe));
-
+				reader.readInto(Pipe.blob(targetPipe), wrkHeadPos, readMaxSize, Pipe.blobMask(targetPipe));			
+				
                 if (temp>=0 & cc!=null && cc.isValid() && !cc.isDisconnecting()) { 
 
 					if (len>0) {

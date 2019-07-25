@@ -672,7 +672,11 @@ public class NetGraphBuilder {
 								varLen
 								)
 						);
-				ServerSocketBulkReaderStage readerStage = new ServerSocketBulkReaderStage(graphManager, localPipe, coordinator);
+				
+				///
+				//TODO: swap in a test instance to generate fast test data.
+				///
+				ServerSocketBulkReaderStage readerStage = ServerSocketBulkReaderStage.newInstance(graphManager, localPipe, coordinator);
 				coordinator.processNota(graphManager, readerStage);
 				Pipe<ReleaseSchema>[] localAck = out[(countOfSocketReaders-x)-1];
 				Pipe<NetPayloadSchema>[] localPayload = in[x];				
@@ -802,7 +806,10 @@ public class NetGraphBuilder {
 		///////////////
 		//all the writer stages
 		///////////////
-		
+		//TODO: special mode for testing builds custom writer object for testing.
+		//      Reader will produce N messages
+		//      Consumer will accept N messages
+		//      we have MORE consumers than readers so we also need, 
 		
 		Pipe[][] req = Pipe.splitPipes(socketWriters, toWiterPipes);	
 		int w = socketWriters;

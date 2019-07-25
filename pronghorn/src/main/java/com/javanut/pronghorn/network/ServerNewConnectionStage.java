@@ -150,10 +150,10 @@ public class ServerNewConnectionStage extends PronghornStage{
             ServerSocketChannel channel = (ServerSocketChannel)serverSocketChannel.configureBlocking(false);
 
             //this stage accepts connections as fast as possible
-            selector = Selector.open();
-            
-            channel.register(selector, SelectionKey.OP_ACCEPT); 
-            
+            Selector s = Selector.open();            
+            channel.register(s, SelectionKey.OP_ACCEPT); 
+            selector = s;
+                        
             extractHostString(endPoint);
             needsToNotifyStartup=true;          
             
@@ -312,48 +312,57 @@ public class ServerNewConnectionStage extends PronghornStage{
             	selectedKeys = selector.selectedKeys();
             	return true;
             } else {
+            	assert(null!=selector);
+            	assert(selector.isOpen());
             	return false;
             }
 
         } catch (ClosedSelectorException cse) {
+        	cse.printStackTrace();
         	return false;
         } catch (IOException e) {
         	logger.warn("new connections",e);
             return false;
         }
     }
+
     
     @Override
     public void run() {
-  
-    	//we always do this because we always poll for new data from the OS
-    	if (null != this.didWorkMonitor) {
-    		this.didWorkMonitor.published();
-    	}
-
-    	assert(null==selectedKeys || selectedKeys.isEmpty()) : selectedKeys.size()+" How is this even possible? All selections should be processed";
     	
-    	if (!needsToNotifyStartup) {	  
-	    	//long now = System.nanoTime();
-	    	    		  
-	           while (hasNewDataToRead()) {
-	        	    doWork = true;
-	                //we know that there is an interesting (non zero positive) number of keys waiting.
-	        	    doneSelectors.clear();
-	        	    selectedKeys.forEach(selectionKeyAction);	                
-	                removeDoneKeys(selectedKeys);
-	                
-	                assert(null==selectedKeys || selectedKeys.isEmpty()) : "All selections should be processed";
-	                if (!doWork) {
-	                	break;
-	                }
-	            }
-	 	        
-		} else {
-			reportServerIsRunning(host);
-			needsToNotifyStartup=false;
-		}
+    	//Appendables.appendEpochTime(System.out, System.currentTimeMillis()).append(" called\n");
+    	//try {
+	    	//we always do this because we always poll for new data from the OS
+	    	if (null != this.didWorkMonitor) {
+	    		this.didWorkMonitor.published();
+	    	}
 	
+	    	assert(null==selectedKeys || selectedKeys.isEmpty()) : selectedKeys.size()+" How is this even possible? All selections should be processed";
+	    	
+	    	if (!needsToNotifyStartup) {	  
+		    	//long now = System.nanoTime();
+		    	//  System.out.println("checking");  		  
+		           while (hasNewDataToRead()) {
+		        	    doWork = true;
+		                //we know that there is an interesting (non zero positive) number of keys waiting.
+		        	    doneSelectors.clear();
+		        	    selectedKeys.forEach(selectionKeyAction);	                
+		                removeDoneKeys(selectedKeys);
+		                
+		                assert(null==selectedKeys || selectedKeys.isEmpty()) : "All selections should be processed";
+		                if (!doWork) {
+		                	break;
+		                }
+		            }
+		 	        
+			} else {
+				reportServerIsRunning(host);
+				needsToNotifyStartup=false;
+			}
+    	//} finally {
+    	//	Appendables.appendEpochTime(System.out, System.currentTimeMillis()).append(" left\n");
+    	//}
+    
     }
 
 
@@ -376,11 +385,10 @@ public class ServerNewConnectionStage extends PronghornStage{
 	
 	private void processSelection(SelectionKey key) {
 		
-		
 		doneSelectors.add(key);	
 		
 		if (null!=newClientConnections 	&& !Pipe.hasRoomForWrite(newClientConnections, ServerNewConnectionStage.connectMessageSize)) {
-			doWork = false;
+			doWork = false;		
 			return;
 		}
 		
@@ -388,7 +396,6 @@ public class ServerNewConnectionStage extends PronghornStage{
 		int readyOps = key.readyOps();
 		                    
 		if (0 != (SelectionKey.OP_ACCEPT & readyOps)) {
-		
 	        //for testing only:  this block limits the servder so only 1 client may handshake at a time.
 			if (limitHandshakeConcurrency && coordinator.isTLS && null!=currentHandshake) {					
 				HandshakeStatus status = currentHandshake.getHandshakeStatus();					
@@ -410,7 +417,7 @@ public class ServerNewConnectionStage extends PronghornStage{
 			
 		      
 		      //NOTE: warning this can accept more connections than we have open pipes, these connections will pile up in the socket reader by design.
-		      	            
+
 		      if (channelId>=0) {		                    
 		    	  Selector sel = coordinator.getSelector();
 		          if (sel!=null) {      		          
@@ -436,7 +443,9 @@ public class ServerNewConnectionStage extends PronghornStage{
 			              if (coordinator.isTLS) {
 			            	  channel.socket().setReceiveBufferSize(1<<15);//NOTE: must be 15 at least for TLS
 			            	  channel.socket().setSendBufferSize(1<<15);
-			              } 
+			              } else {
+			            	  channel.socket().setReceiveBufferSize(1<<14);
+			              }
 			              
 			           	  //turned off for next round of testing
 			           	  //channel.setOption(StandardSocketOptions.SO_SNDBUF, 1<<9);
@@ -510,40 +519,6 @@ public class ServerNewConnectionStage extends PronghornStage{
 		  }
 	}
 
-
-//	private void growSendBuf(SocketChannel socketChannel) {
-//		try {
-//			final int baseSize =socketChannel.getOption(StandardSocketOptions.SO_SNDBUF);
-//			//try to set a larger send buffer size...
-//			
-//			System.out.println("base: "+baseSize);
-//			
-//		    int lastKnown = baseSize;
-//		    do {
-//		    	socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, 1<<21);//lastKnown+baseSize);
-//		    	
-//		    	int newValue = socketChannel.getOption(StandardSocketOptions.SO_SNDBUF);
-//		    	System.out.println("updated to: "+newValue);
-//		    	
-//		    	if (newValue!=(lastKnown+baseSize)) {
-//		    		break;
-//		    	} else {
-//		    		lastKnown = newValue;
-//		    	}
-//		    
-//		    	
-//		    	
-//		    } while (true);
-//			
-//			
-//			
-//			
-//			
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		
-//	}
 	
 	private void publishNotificationOfNewConnection(int targetPipeIdx, final long channelId) {
 		//the pipe selected has already been checked to ensure room for the connect message                      

@@ -665,7 +665,7 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
     }
 
 	public static void playScript(ScriptedNonThreadScheduler that) throws InterruptedException {
-
+		//System.out.println("play script "+Thread.currentThread().getName());
 				assert(null != that.shutdownRequested) : "startup() must be called before run.";
 					
 				checkForModifications(that);			
