@@ -4,7 +4,7 @@
     <groupId>com.javanut</groupId>
     <artifactId>jpg-raster</artifactId>
     <name>jpg-raster</name>
-    <version>1.1.7</version>
+    <version>1.1.8</version>
 
     <description>JPG-Raster (or JPG-to-Raster or J2R) is a JPG file decoder and encoder.
         It reads a JPG file and decompresses all of its data which is then accessible as an array of raw RGB pixel
