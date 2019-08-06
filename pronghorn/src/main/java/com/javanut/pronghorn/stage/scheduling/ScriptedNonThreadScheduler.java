@@ -1082,35 +1082,42 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 
 	private void processException(PronghornStage stage, Exception e) {
 		recordTheException(stage, e, this);
-		//////////////////////
-		//check the output pipes to ensure no writes are in progress
-		/////////////////////
-		int c = GraphManager.getOutputPipeCount(graphManager, stage.stageId);
-		for(int i=1; i<=c; i++) {		
-			if (Pipe.isInBlobFieldWrite((Pipe<?>) GraphManager.getOutputPipe(graphManager, stage.stageId, i))) {
-				//we can't recover from this exception because write was left open....
-				shutdown();	
-				break;
-			}
-		}
+		
+//		//////////////////////
+//		//check the output pipes to ensure no writes are in progress
+//		/////////////////////
+//		validateOutputs(stage);
+		shutdown();	
 	}
+	
+//	private boolean validateOutputs(PronghornStage stage) {
+//		int c = GraphManager.getOutputPipeCount(graphManager, stage.stageId);
+//		for(int i=1; i<=c; i++) {		
+//			if (Pipe.isInBlobFieldWrite((Pipe<?>) GraphManager.getOutputPipe(graphManager, stage.stageId, i))) {
+//				//we can't recover from this exception because write was left open....
+//				shutdown();	
+//				break;
+//			}
+//		}		
+//		return true;
+//	}
 
-	private void reportSLAViolation(String stageName, GraphManager gm, int inProgressIdx, long SLAStart,
-			long duration) {
-		int nameLen = stageName.indexOf('\n');
-		if (-1==nameLen) {
-			nameLen = stageName.length();
-		}
-		Appendables.appendEpochTime(
-				Appendables.appendEpochTime(
-						Appendables.appendNearestTimeUnit(System.err.append("SLA Violation: "), duration)
-						.append(" ")
-						.append(stageName.subSequence(0, nameLen))
-						.append(" ")
-						,SLAStart).append('-')
-				,System.currentTimeMillis())
-		.append(" ").append(gm.name).append("\n");
-	}
+//	private void reportSLAViolation(String stageName, GraphManager gm, int inProgressIdx, long SLAStart,
+//			long duration) {
+//		int nameLen = stageName.indexOf('\n');
+//		if (-1==nameLen) {
+//			nameLen = stageName.length();
+//		}
+//		Appendables.appendEpochTime(
+//				Appendables.appendEpochTime(
+//						Appendables.appendNearestTimeUnit(System.err.append("SLA Violation: "), duration)
+//						.append(" ")
+//						.append(stageName.subSequence(0, nameLen))
+//						.append(" ")
+//						,SLAStart).append('-')
+//				,System.currentTimeMillis())
+//		.append(" ").append(gm.name).append("\n");
+//	}
 
 	public boolean isContentForStage(PronghornStage stage) {
 		int inC = GraphManager.getInputPipeCount(graphManager, stage.stageId);

@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import com.javanut.pronghorn.network.BaseConnection;
 import com.javanut.pronghorn.network.ClientConnection;
 import com.javanut.pronghorn.network.ServerConnection;
-import com.javanut.pronghorn.network.ServerConnectionStruct;
 import com.javanut.pronghorn.network.ServerCoordinator;
 import com.javanut.pronghorn.network.config.HTTPContentType;
 import com.javanut.pronghorn.network.config.HTTPHeader;
@@ -50,8 +49,8 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 
     //TODO: double check that this all works with ipv6.
     
-	private static final long lingerForBusinessConnections =    100_000_000L;
-	private static final long lingerForTemeletryConnections = 2_000_000_000L;
+	private static final long lingerForBusinessConnections =    20_000_000L;
+	private static final long lingerForTemeletryConnections =  100_000_000L;
 	
 	private static final int NO_LENGTH_DEFINED = -2;
 	private static final int SIZE_OF_BEGIN = Pipe.sizeOf(NetPayloadSchema.instance, NetPayloadSchema.MSG_BEGIN_208);
@@ -348,53 +347,16 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
     	int closedEnvLimit = 1+(this.inputs.length>>1);
     	
     	boolean hasRoomToWrite = true;
-    	while (hasRoomToWrite && ( (PipeWorkWatcher.hasWork(pww) && closedEnvLimit>=0) )) {
+    	while (hasRoomToWrite && ( (PipeWorkWatcher.hasWork(pww) && (--closedEnvLimit)>=0) )) {
     		int g = pww.groups();
-    		while ((--g >= 0) && closedEnvLimit>=0) {
+    		while (--g >= 0) {
     			
-    			boolean done = true;
-    			int version = PipeWorkWatcher.version(pww, g);
-    			if (PipeWorkWatcher.hasWork(pww,g)) {  //scan(pww, g)) {
+    			final int version = PipeWorkWatcher.version(pww, g);
+    			if (PipeWorkWatcher.hasWork(pww,g)) {
     		
-    				int start = PipeWorkWatcher.getStartIdx(pww, g);
-    				int limit = PipeWorkWatcher.getLimitIdx(pww, g);
-    			
-	    				for(int idx = start; idx<limit && closedEnvLimit>=0; idx++) {
-	    			
-	    					    if (//!Pipe.hasContentToRead(this.inputs[idx]) 
-									//|| 
-									accumMessages(this, idx, Integer.MAX_VALUE, 
-											         this.inputs[idx], 
-											         this.inputChannels[idx], 32) >=0  ) {	
-									
-									if (this.inputLengths[idx]>0) {
-										done = false;
-										closedEnvLimit--;
-																			
-									   //	c= 0;
-										if (-1 == parsePipe(this, idx)) {
-											//no room
-											//System.out.println("parsed "+c+" xx");
-											hasRoomToWrite = false;
-											break;//need to wait for full pipe to empty
-										};	
-									//	System.out.println("parsed "+c); //each was 16
-										
-									}
-								} else {
-									//we got -1 msgIdx so shut down					
-									if (--shutdownCount<=0) {
-	        							requestShutdown();
-	        							return;
-	        						}
-								}														
-		        				
-		        				releaseIfNeeded(idx);
-	    				}
-
-    				if (done) {
-						PipeWorkWatcher.clearScanState(pww, g, version);
-					}	
+    				hasRoomToWrite = processGroup(hasRoomToWrite, g, version,
+    						                     PipeWorkWatcher.getStartIdx(pww, g), 
+    						                     PipeWorkWatcher.getLimitIdx(pww, g));	
 	    				
        			}
     		}
@@ -412,6 +374,42 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 //    		System.out.println("reading from: "+inputs+" room to write "+ hasRoomToWrite);
 //    	}
     }
+
+
+	private boolean processGroup(boolean hasRoomToWrite, int g, final int version, int start, int limit) {
+		boolean done = true;
+			for(int idx = start; idx<limit; idx++) {
+		
+				    if (
+						accumMessages(this, idx, Integer.MAX_VALUE, 
+								         this.inputs[idx], 
+								         this.inputChannels[idx], 2) >=0  ) {	
+						
+						if (this.inputLengths[idx]>0) {
+							done = false;
+										
+							if (-1 == parsePipe(this, idx)) {									
+								hasRoomToWrite = false;
+								break;//need to wait for full pipe to empty
+							};	
+						
+						}
+						releaseIfNeeded(idx);
+					} else {
+						releaseIfNeeded(idx);
+						//we got -1 msgIdx so shut down					
+						if (--shutdownCount<=0) {
+							requestShutdown();
+							return hasRoomToWrite;
+						}
+					}
+			}
+
+		if (done) {
+			PipeWorkWatcher.clearScanState(pww, g, version);
+		}
+		return hasRoomToWrite;
+	}
 
     private boolean needsRelease = false;
     public void releaseIfNeeded(int idx) {
@@ -455,7 +453,7 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
     private static int parsePipe(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
 		//we can accumulate above but we can not parse or continue until this pipe is clear    
 	   	if (null == that.blockedOnOutput[idx]) {	    	  
-	        return ((that.inputChannels[idx]) < 0) ? 0 : that.parseAvail(idx);
+	        return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 0;
     	} else {
     		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
     			that.blockedOnOutput[idx] = null;
@@ -595,7 +593,7 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 		return false;//this is the only way to pick up more data, eg. exit the outer loop with zero.
 	}
 
-	private static int parseHTTPAvail(HTTP1xRouterStage that, 
+	private static int parseHTTPAvail(HTTP1xRouterStage<?, ?, ?, ?> that, 
 			final int idx,  
 			final long channel) {
 		
@@ -895,7 +893,6 @@ private int errorVerb(TrieParserReader trieReader, final long channel, final int
 
 private int parseAfterVerb(TrieParserReader trieReader, final long channel, final int idx, long arrivalTime,
 		final int tempLen, final int tempPos, final int verbId) {
-	// System.err.println("start at pos "+tempPos+" for "+channel);
 	    
 	    final boolean showTheRouteMap = false;
 	    if (showTheRouteMap) {
@@ -906,7 +903,10 @@ private int parseAfterVerb(TrieParserReader trieReader, final long channel, fina
 		
 		if (pathId>=0) {
 			
-			return parseAfterPath(trieReader, channel, idx, arrivalTime, tempLen, tempPos, verbId, pathId);
+			//TODO: need to know how these are consumed..
+			boolean clearIndexes = true;
+			
+			return parseAfterPath(trieReader, channel, idx, arrivalTime, tempLen, tempPos, verbId, pathId, clearIndexes);
 			
 		} else {
 			
@@ -933,7 +933,7 @@ private int errorPath(TrieParserReader trieReader, final long channel, final int
 
 
 private int parseAfterPath(TrieParserReader trieReader, final long channel, final int idx, long arrivalTime,
-		final int tempLen, final int tempPos, final int verbId, final int pathId) {
+		final int tempLen, final int tempPos, final int verbId, final int pathId, final boolean clearIndexes) {
 	
 	//the above URLS always end with a white space to ensure they match the spec.
 	int routeId;
@@ -963,7 +963,7 @@ private int parseAfterPath(TrieParserReader trieReader, final long channel, fina
 			return NEED_MORE_DATA;
 		}    	
 		
-		int result = parseHTTPImpl(trieReader, channel, idx, arrivalTime, tempLen, tempPos, verbId, pathId, routeId, outputPipe);
+		int result = parseHTTPImpl(trieReader, channel, idx, arrivalTime, tempLen, tempPos, verbId, pathId, routeId, outputPipe, clearIndexes);
 		if (result != SUCCESS) {
 			trieReader.sourceLen = tempLen;
 			trieReader.sourcePos = tempPos;
@@ -1013,7 +1013,8 @@ private void badVerbParse(TrieParserReader trieReader, final long channel, final
 
 
 private int parseHTTPImpl(TrieParserReader trieReader, final long channel, final int idx, long arrivalTime,
-		int tempLen, int tempPos, final int verbId, final int pathId, int routeId, Pipe<HTTPRequestSchema> outputPipe) {
+		int tempLen, int tempPos, final int verbId, final int pathId, int routeId, 
+		Pipe<HTTPRequestSchema> outputPipe, boolean clearIndexes) {
 	
 		Pipe.markHead(outputPipe);//holds in case we need to abandon our writes
 		//NOTE: caller checks for room before calling.
@@ -1030,41 +1031,69 @@ private int parseHTTPImpl(TrieParserReader trieReader, final long channel, final
       
         return parseHTTPImpl2(trieReader, channel, idx, arrivalTime, 
         		              tempLen, tempPos, pathId, routeId, outputPipe,
-				              size, writer);
+				              size, writer, clearIndexes);
 		
 }
 
 
 private int parseHTTPImpl2(TrieParserReader trieReader, final long channel, final int idx, long arrivalTime,
 		int tempLen, int tempPos, final int pathId, int routeId, Pipe<HTTPRequestSchema> outputPipe, final int size,
-		DataOutputBlobWriter<HTTPRequestSchema> writer) {
-	int structId;
-	TrieParser headerMap;
+		DataOutputBlobWriter<HTTPRequestSchema> writer, boolean clearIndexes) {
 	
 	if (config.UNMAPPED_ROUTE != pathId) {
 		
-		structId = config.extractionParser(pathId).structId;
+		int structId = config.extractionParser(pathId).structId;
 		assert(config.getStructIdForRouteId(routeId) == structId) : "internal error";
-	    DataOutputBlobWriter.tryClearIntBackData(writer,config.totalSizeOfIndexes(structId));
+	    
+//TOO many fields for scan... can we make this shorter.
+//		grow struct content-length:  at 1
+//		grow struct transfer-encoding:  at 2
+//		grow struct connection:  at 3
+//		grow struct host:  at 4
+//		grow struct content-type:  at 5
+//		grow struct accept-language:  at 6
+//		grow struct accept-encoding:  at 7
+//		grow struct referer:  at 8
+//		grow struct origin:  at 9
+//		grow struct dnt:  at 10
+//		grow struct user-agent:  at 11   plus 2 gives us 13...
+//		System.out.println("grow struct "+new String(name)+" at "+this.fieldNames[idx].length);
+//		System.out.println("size of indexes: "+config.totalSizeOfIndexes(structId));
+		
+		
+		if (clearIndexes) {
+			DataOutputBlobWriter.tryClearIntBackData(writer,config.totalSizeOfIndexes(structId));
+		}
+		
 	  	if (!captureAllArgsFromURL(config, trieReader, pathId, writer)) {          		
 	  		return sendError(trieReader, channel, idx, tempLen, tempPos);
 	  	}
 	              	
-		headerMap = config.headerParserRouteId( routeId );
-    
+	  	return parseHTTPImpl3(trieReader, channel, idx, arrivalTime,
+				  pathId, routeId, outputPipe, size, writer,
+				  structId, config.headerParserRouteId( routeId ));
 	} else {
 	
-		structId = config.UNMAPPED_STRUCT;
-	    DataOutputBlobWriter.tryClearIntBackData(writer,config.totalSizeOfIndexes(structId));
-	    TrieParserReader.writeCapturedValuesToDataOutput(trieReader, writer, config.unmappedIndexPos,null);
-	    
-		headerMap = config.unmappedHeaders;
-     
+		return unmappedParseHTTP(trieReader, channel, idx, arrivalTime, pathId, routeId, outputPipe, size, writer);
 	}
 
+
+}
+
+
+private int unmappedParseHTTP(TrieParserReader trieReader, final long channel, final int idx, long arrivalTime,
+		final int pathId, int routeId, Pipe<HTTPRequestSchema> outputPipe, final int size,
+		DataOutputBlobWriter<HTTPRequestSchema> writer) {
+	int structId;
+	TrieParser headerMap;
+	structId = config.UNMAPPED_STRUCT;
+	DataOutputBlobWriter.tryClearIntBackData(writer,config.totalSizeOfIndexes(structId));
+	TrieParserReader.writeCapturedValuesToDataOutput(trieReader, writer, config.unmappedIndexPos,null);
+	
+	headerMap = config.unmappedHeaders;
 	return parseHTTPImpl3(trieReader, channel, idx, arrivalTime,
-						  pathId, routeId, outputPipe, size, writer,
-						  structId, headerMap);
+			  pathId, routeId, outputPipe, size, writer,
+			  structId, headerMap);
 }
 
 
@@ -1485,6 +1514,7 @@ private void sendRelease(long channel, final int idx) {
 	}
 }
 
+
 private static int accumMessages(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx, int messageIdx,
 		Pipe<NetPayloadSchema> selectedInput, long inChnl, int maxIter) {
 	//data may be sent in small chunks even when we only have 1 message in flight
@@ -1497,20 +1527,19 @@ private static int accumMessages(HTTP1xRouterStage<?, ?, ?, ?> that, final int i
 	    //logger.info("seen message id of {}",messageIdx);
 	    
 	    if (NetPayloadSchema.MSG_PLAIN_210 == messageIdx) {
-	    	
+	    	////////////////////
+	    	//TODO: note that for 512 calls in we divide the work up 28 ways.
+	    	//      do we have to take these as a single batch of 18 or smaller!!!
+	    	//      under large test we get 9362 per block or 1.4 MB per block..
+	    	//      we have 1 pipe going out from here with 8MB and 13K mesg
+	    	//      Mgs per second seem to top out at 300K? 
+	    	//////////////////
 	    	inChnl = processPlain(that, idx, selectedInput, inChnl);
 	
 	    } else {	        	
+	    	
 	    	if (NetPayloadSchema.MSG_BEGIN_208 == messageIdx) {
-	    		assert(hasNoActiveChannel(that.inputChannels[idx])) : "Can not begin a new connection if one is already in progress.";        		
-	    		assert(0==Pipe.releasePendingByteCount(selectedInput));
-	    		//keep this as the base for our counting of sequence
-				that.sequences[idx] = Pipe.takeInt(selectedInput);
-				
-				Pipe.confirmLowLevelRead(selectedInput, SIZE_OF_BEGIN);
-				//Pipe.releaseReadLock(selectedInput);
-				Pipe.readNextWithoutReleasingReadLock(selectedInput);
-				//do not return, we will go back around the while again. 
+	    		processBegin(that, idx, selectedInput);
 	    	} else {
 	    		if (NetPayloadSchema.MSG_DISCONNECT_203 == messageIdx) {	 
 	    			processDisconnect(that, idx, selectedInput);	        			
@@ -1522,6 +1551,20 @@ private static int accumMessages(HTTP1xRouterStage<?, ?, ?, ?> that, final int i
 	    }        
 	}
 	return messageIdx;
+}
+
+
+private static void processBegin(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx,
+		Pipe<NetPayloadSchema> selectedInput) {
+	assert(hasNoActiveChannel(that.inputChannels[idx])) : "Can not begin a new connection if one is already in progress.";        		
+	assert(0==Pipe.releasePendingByteCount(selectedInput));
+	//keep this as the base for our counting of sequence
+	that.sequences[idx] = Pipe.takeInt(selectedInput);
+	
+	Pipe.confirmLowLevelRead(selectedInput, SIZE_OF_BEGIN);
+	//Pipe.releaseReadLock(selectedInput);
+	Pipe.readNextWithoutReleasingReadLock(selectedInput);
+	//do not return, we will go back around the while again. 
 }
 
 
@@ -1564,7 +1607,8 @@ private static long processPlain(HTTP1xRouterStage<?, ?, ?, ?> that,
 	Pipe.confirmLowLevelRead(selectedInput, SIZE_OF_PLAIN);            
 	Pipe.readNextWithoutReleasingReadLock(selectedInput);
 	
-	if (-1 == slabPos) { //TODO: why here?
+	if (-1 != slabPos) {	
+	} else { //TODO: why here?
 		
 		that.inputSlabPos[idx] = Pipe.getWorkingTailPosition(selectedInput); 
 		//working and was tested since this is low level with unreleased block.
@@ -1662,7 +1706,7 @@ private static void plainFreshStart(HTTP1xRouterStage that, final int idx, Pipe<
 	}
 
 	// Warning Pipe.hasContentToRead(selectedInput) must be called first.
-	private static boolean hasContinuedData(Pipe<NetPayloadSchema> selectedInput, long inChnl) {
+	private static boolean hasContinuedData(final Pipe<NetPayloadSchema> selectedInput, final long inChnl) {
 		return Pipe.peekLong(selectedInput, 1)==inChnl;
 	}
 	

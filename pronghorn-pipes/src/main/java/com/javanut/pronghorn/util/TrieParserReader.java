@@ -649,12 +649,16 @@ public class TrieParserReader {
 		return (TrieParser.getLimit(trie)>0) ? query2(reader, trie, source, sourcePos, sourceLength, sourceMask, unfoundResult, noMatchResult): unfoundResult;
 	}
 
-	private static long query2(TrieParserReader reader, TrieParser trie, byte[] source, int sourcePos,
-							  long sourceLength, int sourceMask, final long unfoundResult, final long noMatchResult) {
+	private static long query2(final TrieParserReader reader, final TrieParser trie, final byte[] source, int sourcePos,
+							  long sourceLength, final int sourceMask, final long unfoundResult, final long noMatchResult) {
 		
-		initForQuery(reader, trie, source, sourcePos & Pipe.BYTES_WRAP_MASK, sourceMask, unfoundResult, noMatchResult);        
+		assert(trie.getLimit()>0) : "SequentialTrieParser must be setup up with data before use.";
+		
+		initQueryMembers(reader, source, sourcePos & Pipe.BYTES_WRAP_MASK, unfoundResult, noMatchResult); 		
+		lazyInitCapturedArray(reader, trie);		
+		reader.sourceMask = Branchless.ifZero(reader.sourceMask, sourceMask, reader.sourceMask);        
 		processEachType(reader, trie, source, sourceLength, sourceMask, false, 0, -1);	
-		return (reader.normalExit) ? exitUponParse(reader, trie) :   reader.result;
+		return (reader.normalExit) ? exitUponParse(reader, trie) : reader.result;
 	}
 
 	public long query(TrieParser trie, CharSequence cs) {
@@ -726,6 +730,8 @@ public class TrieParserReader {
 		reader.type = trie.data[reader.pos++];	
 		
 		while (reader.normalExit && (t=reader.type) != TrieParser.TYPE_END ) {  
+			
+		//	System.out.println(t);
 			
 			if (TrieParser.TYPE_RUN == t) {   
 				parseRun(reader, trie, source, sourceLength, sourceMask, hasSafePoint);
@@ -1168,11 +1174,8 @@ public class TrieParserReader {
 		}
 	}
 
-	private static void initForQuery(TrieParserReader reader, TrieParser trie, 
-			                         byte[] source, int sourcePos, int sourceMask, long unfoundResult, long noMatchResult) {
-
-		assert(trie.getLimit()>0) : "SequentialTrieParser must be setup up with data before use.";
-		
+	private static void initQueryMembers(final TrieParserReader reader, final byte[] source, final int sourcePos,
+			final long unfoundResult, final long noMatchResult) {
 		reader.capturedPos = 0;
 		reader.sourceBacking = source;
 		
@@ -1185,13 +1188,7 @@ public class TrieParserReader {
 		reader.noMatchConstant = noMatchResult;
 		
 		reader.normalExit = true;
-		reader.altStackPos = 0; 
-		
-		lazyInitCapturedArray(reader, trie);
-	
-		reader.sourceMask = Branchless.ifZero(reader.sourceMask, sourceMask, reader.sourceMask);
-
-
+		reader.altStackPos = 0;
 	}
 
 	private static void lazyInitCapturedArray(TrieParserReader reader, TrieParser trie) {
@@ -1303,38 +1300,31 @@ public class TrieParserReader {
 			                      final int sourceMask, final short stopValue) {              
 				
 		int x = sourcePos;
-		int lim = remainingLen<=sourceMask ? (int)remainingLen : sourceMask+1;
-	
+		//int lim = remainingLen<=sourceMask ? (int)remainingLen : sourceMask+1;
+		int lim = remainingLen>sourceMask ? sourceMask+1 :(int)remainingLen;
+				
 		do {
 		} while ( ((stopValue!=source[sourceMask & x++])) && (--lim > 0));         
 
-		final boolean hasStopValue = 0!=stopValue;
-		if (!((lim<=0) && hasStopValue)) { 
-			
-			final int x1 = hasStopValue ? x : x+1;
-			final int len = (x1-sourcePos)-1;
-			
-			//final int len = hasStopValue ? (x-sourcePos)-1 : x-sourcePos; 
+		return parseBytesApply(reader, sourcePos, sourceMask, stopValue, x, lim);
+	}
 
-//			if (len>0) {
-////				OK  -<CAC
-////				date  -<CAC
-////				Tue, 04 Dec 2018 05:17:24 GMT  -<CAC
-////				server  -<CAC
-////				GreenLightning  -<CAC
-////				application/json  -<CAC
-//				
-//				Appendables.appendUTF8(System.out, source, sourcePos, len, sourceMask);
-//				System.out.println("  -<CAC");
-//				
-//			}
-		
+	private static int parseBytesApply(TrieParserReader reader, final int sourcePos, final int sourceMask,
+			final short stopValue, int x, int lim) {
+		//final boolean hasStopValue = 0!=stopValue;
+		if (!((lim<=0) && /*hasStopValue*/   0!=stopValue   )) { 
 			
+			final int x1 = x+Branchless.ifZero(stopValue, 1, 0);
+			//final int x1 = hasStopValue ? x : x+1;
+			
+			final int len = (x1-sourcePos)-1;
+						
 			reader.runLength += (len);
 			reader.capturedPos = extractedBytesRange(reader.sourceBacking, 
 					reader.capturedValues, 
 					reader.capturedPos, 
-					sourcePos, len, sourceMask);                
+					sourcePos, len, sourceMask); 
+			
 			return x1;//if no stop value add 1 more since stop is subtracted			
 		} else {
 			//a zero stop value is a rule to caputure evertything up to the end of the data.

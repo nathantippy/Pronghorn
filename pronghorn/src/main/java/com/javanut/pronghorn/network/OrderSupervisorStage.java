@@ -46,6 +46,7 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
     private final Pipe<HTTPLogResponseSchema> log;
     
     private final Pipe<NetPayloadSchema>[] outgoingPipes;
+    private final boolean[] outgoingInProgress;
         
     public static boolean showUTF8Sent = false;
         
@@ -143,6 +144,8 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
         }
         
         this.outgoingPipes = outgoingPipes;
+        this.outgoingInProgress = new boolean[outgoingPipes.length];
+        Arrays.fill(outgoingInProgress, false);
 
         this.poolMod = outgoingPipes.length;
         this.shutdownCount = dataToSend.length;
@@ -592,17 +595,8 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
 			                      final Pipe<NetPayloadSchema> output,
 			                      final BaseConnection connection,
 			                      final OrderSupervisorStage that) {
-		
-		 //////////////////////////
-		 //output pipe is accumulating this data before it has even stared the message to be sent
-		 //this is required in order to "skip over" the extra tags used eg "hidden" between messages by some modules.
-		 /////////////////////////
-	
-		 DataOutputBlobWriter<NetPayloadSchema> outputStream = 
-				 Pipe.isInBlobFieldWrite(output)
-				 ? Pipe.outputStream(output)
-			     : Pipe.openOutputStream(output);
-			 
+						 
+					 
 		 final int expSeq = Pipe.takeInt(input); //sequence number
 		 assert(sequenceNo == expSeq);
 		 
@@ -614,48 +608,61 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
  
 		 
 		  //also move the position forward
+	 
 		
 		 return loadConnectionDataAndPublish(that, input, myPipeIdx, channelId, beginningOfResponse, 
-				 	output, outputStream, expSeq,
+				 	output, expSeq,
 				 	len, Pipe.takeInt(input), Pipe.byteBackingArray(meta, input), 
-				 	Pipe.bytePosition(meta, input, len), connection);
+				 	Pipe.bytePosition(meta, input, len), connection, that.outgoingInProgress);
 
 	}
 
+	@SuppressWarnings("deprecation")
 	private static int loadConnectionDataAndPublish(
 			final OrderSupervisorStage that,
 			final Pipe<ServerResponseSchema> input, final int myPipeIdx, long channelId,
 			final boolean beginningOfResponse, final Pipe<NetPayloadSchema> output,
-			final DataOutputBlobWriter<NetPayloadSchema> outputStream, final int expSeq, final int len, final int requestContext,
-			final byte[] blob, final int bytePosition, final BaseConnection con) {
+			final int expSeq, final int len, final int requestContext,
+			final byte[] blob, final int bytePosition, final BaseConnection con, boolean[] outgoingInProgress) {
 		
-		 if (null!=con) {
-			 channelId = con.id;	
-			 
-			 if (con.hasDataRoom() && that.conStruct!=null) {
-				 //TODO: echo feature
-				 
-				 //This echo feature can not be correct and must be re-implemented??...
-				 //should be after write not before??? and should read from reader???
-				 //if (beginningOfResponse) {
-				 //	 len = echoHeaders(outputStream, len, Pipe.blobMask(input), blob, bytePosition, reader);
-				 //}
-				 
-			 }
-			
-		 } 
+//		 if (null!=con) {
+//			 
+//			 if (con.hasDataRoom() && that.conStruct!=null) {
+//				 //TODO: echo feature
+//				 
+//				 channelId = con.id;	
+//				 //This echo feature can not be correct and must be re-implemented??...
+//				 //should be after write not before??? and should read from reader???
+//				 //if (beginningOfResponse) {
+//				 //	 len = echoHeaders(outputStream, len, Pipe.blobMask(input), blob, bytePosition, reader);
+//				 //}
+//				 
+//			 }
+//			
+//		 } 
+		
 		 
+		 DataOutputBlobWriter<NetPayloadSchema> outputStream =
+				 outgoingInProgress[myPipeIdx] 
+					 ? Pipe.outputStream(output)
+				     : Pipe.openOutputStream(output);
+			 
+		that.outgoingInProgress[myPipeIdx] = true;
+
+					 
 		 if (len>0) {
 			 DataOutputBlobWriter.write(outputStream, blob, bytePosition, len, Pipe.blobMask(input));
 		 }
+		 
 		 Pipe.confirmLowLevelRead(input, SIZE_OF_TO_CHNL);	 
 		 Pipe.releaseReadLock(input);
 
 		 if (null!=con) {
-			 return rollupMultiAndPublish(that, input, myPipeIdx, channelId, output,
+			 return rollupMultiAndPublish(that, input, myPipeIdx, con.id /*not channelId*/, output,
 					 outputStream, expSeq, len, requestContext, Pipe.blobMask(input), blob,
 					 con, that.log);
 		 } else {
+			 			
 			 return 0;
 		 }
 		
@@ -782,7 +789,7 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
 			 Pipe.outputStream(output).debugAsUTF8();
 		 }
 		
-		 writeToNextStage(output, myPipeIdx, channelId, requestContext, expSeq); 	 
+		 writeToNextStage(output, myPipeIdx, channelId, requestContext, expSeq, that.outgoingInProgress); 	 
 		
 		 assert(Pipe.bytesReadBase(input)>=0);
 		 assert(0==Pipe.releasePendingByteCount(input));
@@ -874,7 +881,7 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
 	}
 
 	private static int writeToNextStage(Pipe<NetPayloadSchema> output, int myPipeIdx,
-			final long channelId, int requestContext, int expSeq) {
+			final long channelId, int requestContext, int expSeq, boolean[] outgoingInProgress) {
 		/////////////
 		 //if needed write out the upgrade message
 		 ////////////
@@ -906,6 +913,7 @@ public class OrderSupervisorStage extends PronghornStage { //AKA re-ordering sta
 
 	 
 		 int lenWritten = DataOutputBlobWriter.closeLowLevelField(Pipe.outputStream(output));
+		 outgoingInProgress[myPipeIdx] = false;
 		 assert(lenWritten>0) : "Do not send messages which contain no data, this is a waste";
 		 		 
 		 Pipe.confirmLowLevelWrite(output, plainSize);	

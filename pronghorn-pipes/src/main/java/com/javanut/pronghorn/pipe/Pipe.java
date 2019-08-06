@@ -723,7 +723,7 @@ public class Pipe<T extends MessageSchema<T>> {
     }
     
 
-	private AtomicBoolean isInBlobFieldWrite = new AtomicBoolean(false);
+	private AtomicBoolean isInBlobFieldWrite = new AtomicBoolean(false);//only needed for assert.
 
     //this is used along with tail position to capture the byte count
 	private long totalBlobBytesRead=0;
@@ -735,7 +735,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	 * @return boolean true if the blob is in the process of  a write.
 	 */
     public static <S extends MessageSchema<S>> boolean isInBlobFieldWrite(Pipe<S> pipe) {
-        return pipe.isInBlobFieldWrite.get();
+        return pipe.isInBlobFieldWrite.get(); //NOTE: only called by assert..
     }
     
     /**
@@ -752,14 +752,19 @@ public class Pipe<T extends MessageSchema<T>> {
      */
     public void openBlobFieldWrite() {  
     	//System.out.println("open stream on "+id);
-        if (!isInBlobFieldWrite.compareAndSet(false, true)) {
+        assert(recordBlobStateForAssertIn()); 
+        assert(recordOpenStack());
+    }
+
+	private boolean recordBlobStateForAssertIn() {
+		if (!isInBlobFieldWrite.compareAndSet(false, true)) {
         	if (null!=blobOpenStack) {
         		blobOpenStack.printStackTrace();
         	}        	
             throw new UnsupportedOperationException("only one open write against the blob at a time.");
-        } 
-        assert(recordOpenStack());
-    }
+        }
+		return true;
+	}
 
     private Exception blobOpenStack;
     private boolean recordOpenStack() {
@@ -772,11 +777,16 @@ public class Pipe<T extends MessageSchema<T>> {
      */
 	public void closeBlobFieldWrite() {
 		blobOpenStack = null;
-    	//System.out.println("close stream on "+id);
+    	assert(recordBlobStateForAssertOut());
+    }
+
+	private boolean recordBlobStateForAssertOut() {
+		//System.out.println("close stream on "+id);
         if (!isInBlobFieldWrite.compareAndSet(true, false)) {
             throw new UnsupportedOperationException("can not close blob if not open.");
         }
-    }
+        return true;
+	}
 
 	/**
 	 * Check if the rate is limited from the consumer side of the pipe.
@@ -4319,8 +4329,8 @@ public class Pipe<T extends MessageSchema<T>> {
      * @param pipe Pipe target
      * @return int count of bytes consumed by previous fragment
      */
-    public static <S extends MessageSchema<S>> int readNextWithoutReleasingReadLock(Pipe<S> pipe) {
-        int bytesConsumedByFragment = takeInt(pipe); 
+    public static <S extends MessageSchema<S>> int readNextWithoutReleasingReadLock(final Pipe<S> pipe) {
+        final int bytesConsumedByFragment = takeInt(pipe); 
         Pipe.markBytesReadBase(pipe, bytesConsumedByFragment); //the base has been moved so we can also use it below.
         assert(Pipe.contentRemaining(pipe)>=0);
         PendingReleaseData.appendPendingReadRelease(pipe.pendingReleases,
@@ -4548,7 +4558,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	
 	}
 
-	private static void notifyPubListener(long workingHeadPos, PipePublishListener[] listeners) {
+	private static void notifyPubListener(final long workingHeadPos, final PipePublishListener[] listeners) {
 			
 		int i = listeners.length;	
     	while (--i>=0) {

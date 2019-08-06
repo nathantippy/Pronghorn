@@ -79,7 +79,7 @@ public class StringTemplateBuilder<T> extends StringTemplateRenderer<T> implemen
 
 	private StringTemplateBuilder<T> addBytes(final byte[] byteData) {
 		return append(
-				new StringTemplateScript<T>() {
+				new StringTemplateScript<T>() {					
 					@Override
 					public void render(AppendableByteWriter writer, T source) {
 						writer.write(byteData);

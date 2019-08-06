@@ -107,8 +107,10 @@ public class HTTPRouterStageConfig<T extends Enum<T> & HTTPContentType,
     
 
         //unknowns are the least important and must be added last 
-        this.urlMap = new TrieParser(512,2,false //never skip deep check so we can return 404 for all "unknowns"
-        	 	                   ,true,true);
+        this.urlMap = new TrieParser(512,2,
+        							 true //we will skip deep checks, similar urls will bleed.
+        							 //false //never skip deep check so we can return 404 for all "unknowns"
+        	 	                     ,true,true);
         
 		String constantUnknownRoute = "${path}";//do not modify
 		int routeId = UNMAPPED_ROUTE;//routeCount can not be inc due to our using it to know if there are valid routes.

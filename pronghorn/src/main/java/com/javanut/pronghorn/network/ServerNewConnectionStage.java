@@ -318,7 +318,7 @@ public class ServerNewConnectionStage extends PronghornStage{
             }
 
         } catch (ClosedSelectorException cse) {
-        	cse.printStackTrace();
+        	//cse.printStackTrace();
         	return false;
         } catch (IOException e) {
         	logger.warn("new connections",e);

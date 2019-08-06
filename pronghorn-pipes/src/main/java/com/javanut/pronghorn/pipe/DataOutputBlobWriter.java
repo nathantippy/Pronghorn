@@ -1,5 +1,11 @@
 package com.javanut.pronghorn.pipe;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectOutputStream;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,11 +13,6 @@ import com.javanut.pronghorn.util.Appendables;
 import com.javanut.pronghorn.util.TrieParser;
 import com.javanut.pronghorn.util.TrieParserReader;
 import com.javanut.pronghorn.util.ma.RunningStdDev;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
 
 public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWriter {
 
@@ -162,16 +163,47 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     	
     	int temp = writer.backPosition-bytes;
     	if (temp >= writer.activePosition) {
-    		int p = writer.lastPosition;
-    		while (--p >= temp) {//clear all
-    			writer.byteBuffer[writer.byteMask & p] = (byte)0xFF;
-    		}    		
+       		
+    		fillBytes(temp, writer.lastPosition, writer.byteBuffer, writer.byteMask);    		
+    		
     		writer.backPosition = temp;
     		return true;
     	} else {
     		return false;
     	}    	
     }
+    
+    static byte[] emptyData;
+    
+
+	private static int fillBytes(int temp, int p, byte[] byteBuffer2, int byteMask2) {
+		
+		
+		
+		int len = p-temp;
+		int start = temp & byteMask2;
+		
+		if ((start+len)<byteMask2) {
+			
+			if (null==emptyData || emptyData.length<len) {
+				emptyData = new byte[len];
+				Arrays.fill(emptyData, (byte)0xFF);				
+			}
+			
+			
+			System.arraycopy(emptyData, 0, 
+							byteBuffer2, start, 
+							len);
+		} else {
+			
+			while (--p >= temp) {//clear all
+				byteBuffer2[byteMask2 & p] = (byte)0xFF;
+			}
+			
+		}
+		
+		return temp-1;
+	}
     
     public static <T extends MessageSchema<T>> int lastBackPositionOfIndex(DataOutputBlobWriter<T> writer) {
     	return writer.backPosition-writer.startPosition;
@@ -336,7 +368,9 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     }
 
 	private static <T extends MessageSchema<T>> int dif(DataOutputBlobWriter<T> writer, int pos1, int pos2) {
-		return (pos2>=pos1) ? (pos2-pos1) : (writer.backingPipe.sizeOfBlobRing - (writer.byteMask & pos1))+(pos2 & writer.byteMask);
+		return (pos2>=pos1) 
+				? (pos2-pos1) 
+				: (writer.backingPipe.sizeOfBlobRing - (writer.byteMask & pos1))+(pos2 & writer.byteMask);
 	}
 	
 	@Override
@@ -1048,6 +1082,10 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
 	
 	public static void appendLongAsText(DataOutputBlobWriter writer, long value, boolean useNegPara) {
 	        writer.activePosition = Appendables.longToChars(value, useNegPara, writer.byteBuffer, writer.byteMask, writer.activePosition);;
+	}
+
+	public static int absoluteStart(DataOutputBlobWriter<?> outputStream) {
+		return outputStream.startPosition;
 	}
 
 	

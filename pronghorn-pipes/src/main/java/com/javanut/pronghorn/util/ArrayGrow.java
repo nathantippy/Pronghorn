@@ -36,8 +36,8 @@ public class ArrayGrow {
 	
 	public static <T> T[] appendToArray(T[] source, T append, Class<?> clazz) {
 		
-		int i = null==source?0:source.length;
-		T[] newArray = (T[]) Array.newInstance(clazz, i+1);
+		int i = null==source ? 0 : source.length;
+		T[] newArray = (T[]) Array.newInstance(clazz, i + 1);
 		System.arraycopy(source, 0, newArray, 0, i);
 		newArray[i] = append;
 		return newArray;

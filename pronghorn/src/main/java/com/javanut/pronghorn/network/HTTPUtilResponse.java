@@ -23,36 +23,45 @@ public class HTTPUtilResponse {
 					            long connectionId, 
 					            final int sequenceNo,
 					            Pipe<ServerResponseSchema> pipe) {
-	
-			Pipe.addMsgIdx(pipe, ServerResponseSchema.MSG_TOCHANNEL_100);			
-			that.block1ConSeqSlabPos = Pipe.workingHeadPosition(pipe);
+		
+		holdEmptyBlock(that, connectionId, sequenceNo, pipe, pipe.maxVarLen);
+	}
 
-			//this is used by downstream tasks which may be peeking...
-			Pipe.addLongValue(connectionId, pipe);
-			Pipe.addIntValue(sequenceNo, pipe);	
-			
-			DataOutputBlobWriter<?> outputStream = Pipe.outputStream(pipe);	
-			that.block1HeaderBlobPosition = Pipe.getWorkingBlobHeadPosition(pipe);
-	
-			DataOutputBlobWriter.openFieldAtPosition(outputStream, that.block1HeaderBlobPosition); 	//no context, that will come in the second message 
-	        
-			//for the var field we store this as meta then length
-			that.block1PositionOfLen = (1+Pipe.workingHeadPosition(pipe));
-			
-			DataOutputBlobWriter.closeLowLevelMaxVarLenField(outputStream);
-			assert(pipe.maxVarLen == Pipe.slab(pipe)[((int)that.block1PositionOfLen) & Pipe.slabMask(pipe)]) : "expected max var field length";
-			
-			Pipe.addIntValue(0, pipe); //not needed, this is set later
-			//the full blob size of this message is very large to ensure we have room later...
-			//this call allows for the following message to be written after this messages blob data
-			int consumed = Pipe.writeTrailingCountOfBytesConsumed(outputStream.getPipe()); 
-			assert(pipe.maxVarLen == consumed);
-			Pipe.confirmLowLevelWrite(pipe); 
-			//Stores this publish until the next message is complete and published
-			Pipe.storeUnpublishedWrites(outputStream.getPipe());
-	
-			
-			//logger.info("new empty block at {} {} ",block1HeaderBlobPosition, block1PositionOfLen);
+
+	public static void holdEmptyBlock(HTTPUtilResponse that, long connectionId, final int sequenceNo,
+			Pipe<ServerResponseSchema> pipe, int emptyBlockSize) {
+		Pipe.addMsgIdx(pipe, ServerResponseSchema.MSG_TOCHANNEL_100);			
+		that.block1ConSeqSlabPos = Pipe.workingHeadPosition(pipe);
+
+		//this is used by downstream tasks which may be peeking...
+		Pipe.addLongValue(connectionId, pipe);
+		Pipe.addIntValue(sequenceNo, pipe);	
+		
+		DataOutputBlobWriter<?> outputStream = Pipe.outputStream(pipe);	
+		that.block1HeaderBlobPosition = Pipe.getWorkingBlobHeadPosition(pipe);
+
+		DataOutputBlobWriter.openFieldAtPosition(outputStream, that.block1HeaderBlobPosition); 	//no context, that will come in the second message 
+		
+		//for the var field we store this as meta then length
+		that.block1PositionOfLen = (1+Pipe.workingHeadPosition(pipe));
+		
+		//by making this smaller the pre-fetch will then work much better.
+		DataOutputBlobWriter.closeLowLeveLField(outputStream, emptyBlockSize);
+		
+		
+		assert(pipe.maxVarLen == Pipe.slab(pipe)[((int)that.block1PositionOfLen) & Pipe.slabMask(pipe)]) : "expected max var field length";
+		
+		Pipe.addIntValue(0, pipe); //not needed, this is set later
+		//the full blob size of this message is very large to ensure we have room later...
+		//this call allows for the following message to be written after this messages blob data
+		int consumed = Pipe.writeTrailingCountOfBytesConsumed(outputStream.getPipe()); 
+		assert(pipe.maxVarLen == consumed);
+		Pipe.confirmLowLevelWrite(pipe); 
+		//Stores this publish until the next message is complete and published
+		Pipe.storeUnpublishedWrites(outputStream.getPipe());
+
+		
+		//logger.info("new empty block at {} {} ",block1HeaderBlobPosition, block1PositionOfLen);
 	}
 
 	public static void openToEmptyBlock(HTTPUtilResponse that, DataOutputBlobWriter<?> outputStream) {

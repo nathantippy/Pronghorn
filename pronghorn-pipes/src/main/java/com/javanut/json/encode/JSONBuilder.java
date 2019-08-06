@@ -285,26 +285,25 @@ class JSONBuilder<R, T> extends StringTemplateScript<T> {
 
         final ObjectRenderState newOrs = new ObjectRenderState(kw);
 
-        final StringTemplateScript<T> objNullBranch = createNullObjectScript(declaredMemberName);
-        final StringTemplateScript<T> notNullBranch = new StringTemplateScript<T>() {
+        final StringTemplateScript<T>[] nullableBranches = new StringTemplateScript[2];
+        
+        nullableBranches[0] = createNullObjectScript(declaredMemberName);        
+        nullableBranches[1] = new StringTemplateScript<T>() {
+        	
             @Override
             public void render(AppendableByteWriter writer, T source) {
                 prefixObjectMemberName(declaredMemberName, depth, writer);
                 newOrs.beginObjectRender();
                 accessorScript.render(writer, accessor.get(source));
             }
+            
         };
 
-        final StringTemplateScript<T>[] nullableBranches = new StringTemplateScript[2];
-        nullableBranches[0] = objNullBranch;
-        nullableBranches[1] = notNullBranch;
 
-        scripts.add(nullableBranches, new StringTemplateBranching<T>() {
-            @Override
-            public int branch(T o) {
-                return accessor.get(o) == null ? 0 : 1;
-            }
+        scripts.add(nullableBranches, (t)->{
+        	return accessor.get(t) == null ? 0 : 1;
         });
+              
         JSONBuilder<R, M> builder = new JSONBuilder<>(accessorScript, kw, depth + 1, root);
         builder.ors = newOrs;
         return builder;

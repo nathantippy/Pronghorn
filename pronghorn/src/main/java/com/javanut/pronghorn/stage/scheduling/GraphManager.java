@@ -136,6 +136,10 @@ public class GraphManager {
 	private int[] multOutputIds = new int[INIT_PIPES]; //a -1 marks the end of a run of values
 	private int topOutput = 0;
 	
+	private int[] stageIdInputsCount = new int[INIT_STAGES];
+	private int[] stageIdOutputsCount = new int[INIT_STAGES];
+	
+	
 	//for lookup of RingBuffer from RingBuffer id
 	private Pipe[] pipeIdToPipe = new Pipe[INIT_PIPES];
 	
@@ -295,6 +299,10 @@ public class GraphManager {
 		Arrays.fill(stageIdToInputsBeginIdx, -1);
 		Arrays.fill(multInputIds, -1);
 		Arrays.fill(stageIdToOutputsBeginIdx, -1);
+		
+		Arrays.fill(stageIdInputsCount, -1);
+		Arrays.fill(stageIdOutputsCount, -1);
+				
 		Arrays.fill(multOutputIds, -1);
 		Arrays.fill(notaIdToStageId, -1);
 		Arrays.fill(stageIdToNotasBeginIdx, -1);
@@ -310,6 +318,10 @@ public class GraphManager {
 		Arrays.fill(stageIdToInputsBeginIdx, -1);
 		Arrays.fill(multInputIds, -1);
 		Arrays.fill(stageIdToOutputsBeginIdx, -1);
+		
+		Arrays.fill(stageIdInputsCount, -1);
+		Arrays.fill(stageIdOutputsCount, -1);
+		
 		Arrays.fill(multOutputIds, -1);
 		Arrays.fill(notaIdToStageId, -1);
 		Arrays.fill(stageIdToNotasBeginIdx, -1);
@@ -836,6 +848,7 @@ public class GraphManager {
 			
 			int i=0;
 			int limit = inputs.length;
+			gm.stageIdInputsCount[stage.stageId]=0;
 			while (i<limit) {
 				try {
 					regInput(gm, inputs, stageId, i, inputs[i++]);
@@ -863,6 +876,7 @@ public class GraphManager {
 			//loop over outputs
 			i = 0;
 			limit = outputs.length;
+			gm.stageIdOutputsCount[stage.stageId]=0;
 			while (i<limit) {
 				try {
 					regOutput(gm, outputs, stageId, i, outputs[i++]);
@@ -1044,7 +1058,11 @@ public class GraphManager {
 		//now store the stage
 		gm.stageIdToStage = setValue(gm.stageIdToStage, stageId, stage);		
 		gm.stageIdToInputsBeginIdx = setValue(gm.stageIdToInputsBeginIdx, stageId, gm.topInput, stage);
-		gm.stageIdToOutputsBeginIdx = setValue(gm.stageIdToOutputsBeginIdx, stageId, gm.topOutput, stage);			
+		gm.stageIdToOutputsBeginIdx = setValue(gm.stageIdToOutputsBeginIdx, stageId, gm.topOutput, stage);		
+		
+		gm.stageIdInputsCount = setValue(gm.stageIdInputsCount, stageId, 0); 
+		gm.stageIdOutputsCount = setValue(gm.stageIdOutputsCount, stageId, 0);
+		
 		gm.stageIdToNotasBeginIdx = setValue(gm.stageIdToNotasBeginIdx, stageId, gm.topNota, stage);		
 		gm.stageRunNS = setValue(gm.stageRunNS, stageId, 0);
 		gm.stageShutdownTimeNs = setValue(gm.stageShutdownTimeNs, stageId, 0);
@@ -1071,6 +1089,11 @@ public class GraphManager {
 			int stageId = beginStageRegister(gm, stage);
 			setStateToNew(gm, stageId);
 			
+			if (null!=input) {
+				gm.stageIdInputsCount[stage.stageId]=1;
+			} else {
+				gm.stageIdInputsCount[stage.stageId]=0;
+			}
 			
 			//loop over inputs
 			regInput(gm, input, stageId);
@@ -1091,7 +1114,8 @@ public class GraphManager {
 			
 			
 			int i = 0;
-			int limit = outputs.length;
+			final int limit = outputs.length;
+			gm.stageIdOutputsCount[stage.stageId]=0;
 			while (i<limit) {
 				regOutput(gm, outputs, stageId, i, outputs[i++]);
 			}
@@ -1115,6 +1139,7 @@ public class GraphManager {
 				}
 			}
 			if (!alreadyReg) {
+				gm.stageIdOutputsCount[stageId]++;
 				regOutput(gm, localOutput, stageId);
 			}
 		}
@@ -1128,12 +1153,13 @@ public class GraphManager {
 			boolean alreadyReg = false;
 
 			while (--x>=0) {
-				if (inputs[x]!=null) {					
+				if (inputs[x]!=null) {	
 					Pipe.structRegistry(inputs[x],gm.recordTypeData);
 					alreadyReg |= (localInput.id == inputs[x].id);
 				}
 			}
 			if (!alreadyReg) {
+				gm.stageIdInputsCount[stageId]++;
 				regInput(gm, localInput, stageId);
 			}
 		}
@@ -1160,11 +1186,17 @@ public class GraphManager {
 			}
 			
 			int i = 0;
-			int limit = inputs.length;
+			final int limit = inputs.length;
+			gm.stageIdInputsCount[stage.stageId] = 0;
 			while (i<limit) {
 				regInput(gm,inputs,stageId,i,inputs[i++]);
 			}
 			
+			if (null!=output) {
+				gm.stageIdOutputsCount[stage.stageId]=1;
+		    } else {
+		    	gm.stageIdOutputsCount[stage.stageId]=0;
+		    }
 			//loop over outputs			
 			regOutput(gm, output, stageId);			
 			
@@ -1178,9 +1210,19 @@ public class GraphManager {
 			int stageId = beginStageRegister(gm, stage);
 			setStateToNew(gm, stageId);
 			
+			if (null!=input) {
+				gm.stageIdInputsCount[stage.stageId]=1;
+		    } else {
+		    	gm.stageIdInputsCount[stage.stageId]=0;
+		    }
 			//loop over inputs
 			regInput(gm, input, stageId);
 	
+			if (null!=output) {
+				gm.stageIdOutputsCount[stage.stageId]=1;
+		    } else {
+		    	gm.stageIdOutputsCount[stage.stageId]=0;		    	
+		    }
 			//loop over outputs
 			regOutput(gm, output, stageId);			
 			
@@ -1741,17 +1783,18 @@ public class GraphManager {
 	}
 	
 	public static int getOutputPipeCount(GraphManager m, int stageId) {
-		
+		assert (checkOutputsCount(m, stageId) == ((stageId>=0)?m.stageIdOutputsCount[stageId] : 0) ) : checkOutputsCount(m, stageId)+" == "+((stageId>=0)?m.stageIdOutputsCount[stageId] : 0) ;		
+		return (stageId>=0) ? m.stageIdOutputsCount[stageId] : 0;
+	}
+
+	private static int checkOutputsCount(GraphManager m, int stageId) {
 		int idx = m.stageIdToOutputsBeginIdx[stageId];
 		int count = 0;
 		if (idx>=0) {
 			while (-1 != (m.multOutputIds[idx++])) {		
 				count++;
 			}	
-		}
-		
-		//TODO: if we are now immutable cachd this value so we do not need to count!!!
-		
+		}		
 		
 		return count;
 	}
@@ -1789,7 +1832,11 @@ public class GraphManager {
 	}
 	
 	public static int getInputPipeCount(GraphManager m, int stageId) {
-		
+		assert (checkInputsCount(m,stageId) == ((stageId>=0) ? m.stageIdInputsCount[stageId] : 0)) : checkInputsCount(m,stageId)+" == "+((stageId>=0) ? m.stageIdInputsCount[stageId] : 0);
+		return (stageId>=0) ? m.stageIdInputsCount[stageId] : 0;
+	}
+
+	private static int checkInputsCount(GraphManager m, int stageId) {
 		int count = 0;
 		if (stageId>=0) {
 			int idx = m.stageIdToInputsBeginIdx[stageId];

@@ -9,8 +9,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -23,6 +25,7 @@ import com.javanut.pronghorn.pipe.Pipe;
 import com.javanut.pronghorn.stage.PronghornStage;
 import com.javanut.pronghorn.stage.scheduling.GraphManager;
 import com.javanut.pronghorn.util.Appendables;
+import com.javanut.pronghorn.util.SelectedKeyHashMapHolder;
 
 
 public class ServerSocketBulkReaderStage extends PronghornStage {
@@ -118,7 +121,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    		//ignore, not supported on this platform
 	    	}
 			
-	//    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
+	    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
 			
 	    	dataReader.generateSocketHolder();
 	      
@@ -132,13 +135,13 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    
   
 
-//	    private SelectedKeyHashMapHolder selectedKeyHolder;
-//		private final BiConsumer keyVisitor = new BiConsumer() {
-//			@Override
-//			public void accept(Object k, Object v) {
-//				selectionKeyAction.accept((SelectionKey)k);
-//			}
-//		};
+	    private SelectedKeyHashMapHolder selectedKeyHolder;
+		private final BiConsumer keyVisitor = new BiConsumer() {
+			@Override
+			public void accept(Object k, Object v) {
+				dataReader.selectionKeyAction.accept((SelectionKey)k);
+			}
+		};
 
 	    @Override
 	    public void run() {
@@ -164,12 +167,19 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 		    	            dataReader.doneSelectors.clear();
 		    	            dataReader.hasRoomForMore = true; //set this up before we visit
 		    	            
-		    	            //stops early if we are out of room.
-		    	            Iterator<SelectionKey> it = dataReader.selectedKeys.iterator();
-		    	            while (dataReader.hasRoomForMore && it.hasNext()) {
-		    	            	dataReader.selectionKeyAction.accept(it.next());		    	            	
-		    	            }		    	            
-		    	   
+		    	            HashMap<SelectionKey, ?> keyMap = selectedKeyHolder.selectedKeyMap(dataReader.selectedKeys);
+		    	            if (null!=keyMap) {
+		    	            	keyMap.forEach(keyVisitor);
+		    	            } else {
+		    	            
+		    	            	//stops early if we are out of room.
+			    	            Iterator<SelectionKey> it = dataReader.selectedKeys.iterator();
+			    	            while (dataReader.hasRoomForMore && it.hasNext()) {
+			    	            	dataReader.selectionKeyAction.accept(it.next());		    	            	
+			    	            }		
+		    	            }
+		    	            
+			    	         	   
 		    	            removeDoneKeys(dataReader.selectedKeys);
 		    	            
 		    	            if (!dataReader.hasRoomForMore) {
