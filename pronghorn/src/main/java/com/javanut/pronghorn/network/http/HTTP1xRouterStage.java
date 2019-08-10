@@ -1523,19 +1523,9 @@ private static int accumMessages(HTTP1xRouterStage<?, ?, ?, ?> that, final int i
 		//if the old was released or this matches or this was proposed for release we set this new current channel.
 				
 		messageIdx = Pipe.takeMsgIdx(selectedInput);
-
-	    //logger.info("seen message id of {}",messageIdx);
 	    
 	    if (NetPayloadSchema.MSG_PLAIN_210 == messageIdx) {
-	    	////////////////////
-	    	//TODO: note that for 512 calls in we divide the work up 28 ways.
-	    	//      do we have to take these as a single batch of 18 or smaller!!!
-	    	//      under large test we get 9362 per block or 1.4 MB per block..
-	    	//      we have 1 pipe going out from here with 8MB and 13K mesg
-	    	//      Mgs per second seem to top out at 300K? 
-	    	//////////////////
-	    	inChnl = processPlain(that, idx, selectedInput, inChnl);
-	
+	    	inChnl = processPlain(that, idx, selectedInput, inChnl);	
 	    } else {	        	
 	    	
 	    	if (NetPayloadSchema.MSG_BEGIN_208 == messageIdx) {

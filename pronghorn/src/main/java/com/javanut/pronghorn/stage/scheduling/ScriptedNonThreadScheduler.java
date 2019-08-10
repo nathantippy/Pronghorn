@@ -799,9 +799,9 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 		//cycles of nothing to process, for 40mircros with is 40 ms switch.
 		if (disableDeepSleep || (noWorkCounter<cyclesOfNoWorkBeforeSleep || deepSleepCycleLimt<=0)) {//do it since we have had recent work
 			
-			if (isInDeepSleepMode) {
+			//if (isInDeepSleepMode) {
 				//logger.trace("waking up from deep sleep for :\n "+this.name());
-			}
+			//}
 			isInDeepSleepMode = false;
 			
 			long now = System.nanoTime();
@@ -962,24 +962,7 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 		timeStartedRunningStage = start;
 		
 		DidWorkMonitor.begin(localDidWork, start);		
-		boolean shutDownRequestedHere = false;
-		
-//		if (noDeepAssertChecks) {
-//			try {		
-//				//NOTE: if no stages have shutdown we could elminate this check with a single boolean. TODO: if this shows up in profiler again.
-//				if (!(stateArray[stage.stageId] >= GraphManagerStageStateData.STAGE_STOPPING)) {
-//						stage.run();	        
-//				        timeStartedRunningStage = 0;
-//				} else {				
-//				    processShutdown(graphManager, stage);
-//				    shutDownRequestedHere = true;
-//				}
-//			} catch (Exception e) {			
-//				shutDownRequestedHere = processExceptionAndCleanup(this, stage, e);
-//			}		    
-//		} else {		
-			shutDownRequestedHere = runStageImpl(this, stage);	
-//		}
+		final boolean shutDownRequestedHere = runStageImpl(this, stage);	
 		
 		if (!DidWorkMonitor.didWork(localDidWork)) {
 			GraphManager.recordNoWorkDone(graphManager,stage.stageId);	
