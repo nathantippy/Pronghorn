@@ -455,13 +455,18 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 	   	if (null == that.blockedOnOutput[idx]) {	    	  
 	        return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 0;
     	} else {
-    		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
-    			that.blockedOnOutput[idx] = null;
-    			return 1;
-    		} else {
-    			return -1;
-    		}
+    		return parsePipeBlockedReset(that, idx);
     	}
+	}
+
+
+	private static int parsePipeBlockedReset(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
+		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
+			that.blockedOnOutput[idx] = null;
+			return 1;
+		} else {
+			return -1;
+		}
 	}
 
 

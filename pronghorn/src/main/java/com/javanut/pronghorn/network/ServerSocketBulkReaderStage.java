@@ -30,6 +30,13 @@ import com.javanut.pronghorn.util.SelectedKeyHashMapHolder;
 
 public class ServerSocketBulkReaderStage extends PronghornStage {
 
+//	Server socket bulk reader top 3 time consumers....
+//	Reading network, read() 215
+//	HasNewWork can read     163   uses HashSet can we use more efficient algo ??
+//	Copy to non direct buff 104   looks up temp buffer can we make this direct ??
+//
+//
+	
 		public static ServerSocketBulkReaderStage newInstance(GraphManager graphManager, Pipe<SocketDataSchema>[] output, 
     														ServerCoordinator coordinator) {
 			return new ServerSocketBulkReaderStage(graphManager, output, coordinator);
@@ -293,20 +300,32 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			}
 		}
 
+		
+	//	long nextSelect = -1;
 
 		private boolean hasNewDataToRead(Selector selector) {
 	    	
+			
 	    	//assert(null==selectedKeys || selectedKeys.isEmpty()) : "All selections should be processed";
 //	    	if (null!=selectedKeys && !selectedKeys.isEmpty()) {
 //	    		return true; //keep this!
 //	    	}
 	    	
+//			if (nextSelect>0) {
+//				long dif = System.nanoTime()-nextSelect;
+//				if (dif < 0 && dif>-1000000000L) {
+//					return false;
+//				}
+//			}
+			
 	        try {
 	                	
 	        	////////////
 	        	//CAUTION - select now clears previous count and only returns the additional I/O operation counts which have become avail since the last time SelectNow was called
 	        	////////////        
-	        	if (selector.selectNow() > 0) {            	
+	        	//TODO: this has a HashSet.contains in this call which is a bit slow...
+	        	if (selector.selectNow() > 0) {     
+	   //     		nextSelect = -1;
 	            	dataReader.selectedKeys = selector.selectedKeys();
 	            	
 	            	//we often select ALL the sent fields so what is going wrong??
@@ -314,6 +333,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	            	
 	            	return true;
 	            } else {
+	     //       	nextSelect = System.nanoTime() + 20_000L;
+	            	
 	            	return false;
 	            }
 
@@ -362,7 +383,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                do {
 	                	//System.out.println("rec buffer: "+that.readSize	+"  "+ 	targetBuffer[0].remaining()+" "+targetBuffer[1].remaining());
 	                	
-	                	temp = sourceChannel.read(targetBuffer);
+	                	temp = sourceChannel.read(targetBuffer);//TODO: shoudl be direct??
 	                	if (temp>0){
 	                		len+=temp;
 	                	}
@@ -372,8 +393,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                
 	                //784 needed for 16,  49 byes per request
 	                //System.out.println(len); ServerSocketReaderStage.showRequests=true;
-	                
-	                attemptSetTcpQuickAckLocal(that, sourceChannel);	
+	                     
+	                //NOTE: not much help///  attemptSetTcpQuickAckLocal(that, sourceChannel);	
 	        
 	                
 	                assert(that.readCountMatchesLength(len, targetBuffer));
