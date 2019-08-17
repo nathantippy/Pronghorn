@@ -18,7 +18,6 @@ import com.javanut.pronghorn.stage.PronghornStage;
 import com.javanut.pronghorn.stage.scheduling.GraphManager;
 import com.javanut.pronghorn.util.Appendables;
 import com.javanut.pronghorn.util.PoolIdx;
-import com.javanut.pronghorn.util.PoolIdxPredicate;
 
 /**
  * Server-side stage that reads from the socket. Useful for building a server.
@@ -46,7 +45,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
     private final String label;
 
 	private PoolIdx responsePipeLinePool;
-	private final int tracks;
+//	private final int tracks;
 	
     
     public static ServerSocketBulkRouterStage newInstance(GraphManager graphManager, Pipe<SocketDataSchema> input, Pipe<ReleaseSchema>[] ack, Pipe<NetPayloadSchema>[] output, 
@@ -81,10 +80,10 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
         GraphManager.addNota(graphManager, GraphManager.DOT_BACKGROUND, "lemonchiffon3", this);
         GraphManager.addNota(graphManager, GraphManager.DOT_RANK_NAME, "SocketRouter", this);
         
-        Number dsr = graphManager.defaultScheduleRate();
-        if (dsr!=null) {
-        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
-        }
+//        Number dsr = graphManager.defaultScheduleRate();
+//        if (dsr!=null) {
+//        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
+//        }
                
 		//        //If server socket reader does not catch the data it may be lost
 		//        GraphManager.addNota(graphManager, GraphManager.ISOLATE, GraphManager.ISOLATE, this);
@@ -106,7 +105,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
       
 		long gt = NetGraphBuilder.computeGroupsAndTracks(coordinator.moduleParallelism(), coordinator.isTLS);		 
 		int groups = (int)((gt>>32)&Integer.MAX_VALUE);//same as count of SocketReaders
-		tracks = (int)gt&Integer.MAX_VALUE; //tracks is count of HTTP1xRouters
+//		tracks = (int)gt&Integer.MAX_VALUE; //tracks is count of HTTP1xRouters
     }
         
     @Override
@@ -134,10 +133,16 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
     boolean showLocks = false;
     long lastTime = 0;
     
+//    int blocks;
+    
     @Override
     public void run() {
  
+    //	 blocks = 0;
+    	
     	 if(!shutdownInProgress) {
+    		 
+    	//  do {
  	        	releasePipesForUse();//clear now so select will pick up more
 
     	   		///////////////////
@@ -196,6 +201,8 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 											
 											if (processConnection2(cc, input)) {
 											
+				//								blocks++;
+												
 												Pipe.confirmLowLevelRead(input, Pipe.sizeOf(input, msgIdx));
 												Pipe.releaseReadLock(input);
 											
@@ -240,6 +247,31 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 //    	    		System.out.println("LOCK STATUS:\n"+responsePipeLinePool);
 //    	    		showLocks = false;
 //    	    	}
+    	    	
+//    	    	rdsCountIter++;
+//    	   
+//    	   if (blocks>0) {
+//    		   if (!isMonitor()) {
+//    			   start = true;
+//    		   }
+//    	   }
+    	   
+    	  
+    	   
+    	   
+    	//	  } while (false);//blocks<7);
+    	   
+//    	   if (start) {
+//    		   
+//    		   RunningStdDev.sample(rsdCount, blocks);
+//    	   
+//    		   if ((rdsCountIter & 0x3FFF) == 0) {
+//    			   System.out.println(rdsCountIter+" ------  socket read: "+  rsdCount.toString());
+//    		   }
+//    		   
+//    	   }
+//    	    	
+    	    	
     	 
     	 } else {
 	    	 int i = output.length;
@@ -256,6 +288,9 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
         
     }
   
+//    int rdsCountIter = 0;
+//    boolean start = false;
+//    RunningStdDev rsdCount = new RunningStdDev();
 
 	private boolean processConnection2(BaseConnection cc, Pipe<SocketDataSchema> input) {
 		
@@ -553,8 +588,8 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
                 if (temp>=0 & cc!=null && cc.isValid() && !cc.isDisconnecting()) { 
 
 					if (len>0) {
-						int result = publishData(channelId, sequenceNo, targetPipe, len, newBeginning)
-								? 1 : 0; //if all published we return 1
+						int result = publishData(this, channelId, sequenceNo, targetPipe, len, newBeginning)
+												? 1 : 0; //if all published we return 1
 						if (0==result) {//TODO: not happening any longer...
 	                		throw new UnsupportedOperationException();
 	                	}
@@ -613,10 +648,11 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 		 return 1;//yes we are done
 	}
 
-	private boolean publishData(long channelId, int sequenceNo, Pipe<NetPayloadSchema> targetPipe, long len, 
+	private static boolean publishData(ServerSocketBulkRouterStage that, long channelId, int sequenceNo, Pipe<NetPayloadSchema> targetPipe, long len, 
 						    boolean newBeginning) {
-		if (newBeginning) {	
-										
+		if (!newBeginning) {	
+			return publishDataImpl(that, channelId, targetPipe, len);
+		} else {								
 			Pipe.presumeRoomForWrite(targetPipe);
 			
 			int size = Pipe.addMsgIdx(targetPipe, NetPayloadSchema.MSG_BEGIN_208);
@@ -625,24 +661,25 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 			Pipe.batchFollowingPublishes(targetPipe, 1);
 			
 			Pipe.publishWrites(targetPipe); //wait on publish until the rest is ready...
-			
-		}				
+			return publishDataImpl(that, channelId, targetPipe, len);
+		}	
+	}
 
+	private static boolean publishDataImpl(ServerSocketBulkRouterStage that, long channelId, Pipe<NetPayloadSchema> targetPipe, long len) {
 		Pipe.presumeRoomForWrite(targetPipe);
 		
-		if (messageType>=0) {
+		if (that.messageType>=0) {
 			//true if all written
 			//System.out.println("publishSingleMessage "+channelId);
-			return publishSingleMessage(targetPipe, channelId, Pipe.unstoreBlobWorkingHeadPosition(targetPipe), len);     
+			return publishSingleMessage(that, targetPipe, channelId, Pipe.unstoreBlobWorkingHeadPosition(targetPipe), len);     
 
 		} else {
 			Pipe.publishEOF(targetPipe);
 			return len==0;
 		}
-
 	}
 	
-    private boolean publishSingleMessage(Pipe<NetPayloadSchema> targetPipe, 
+    private static boolean publishSingleMessage(ServerSocketBulkRouterStage that, Pipe<NetPayloadSchema> targetPipe, 
 		    		                 long channelId, 
 		    		                 int pos, long remainLen) {
     	
@@ -651,17 +688,17 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
     		//System.out.println("publish to channel "+channelId);
     		
     		    int localLen = (int)Math.min(targetPipe.maxVarLen, remainLen);    		
-	            final int size = Pipe.addMsgIdx(targetPipe, messageType);               
+	            final int size = Pipe.addMsgIdx(targetPipe, that.messageType);               
 	
 		        Pipe.addLongValue(channelId, targetPipe);  
 		        Pipe.addLongValue(System.nanoTime(), targetPipe);
 				
-		        if (NetPayloadSchema.MSG_PLAIN_210 == messageType) {
+		        if (NetPayloadSchema.MSG_PLAIN_210 == that.messageType) {
 		        	Pipe.addLongValue(-1, targetPipe);
 		        }
 		        		
 		        if (showRequests) {	        	
-		        	showRequests(targetPipe, channelId, pos, localLen);
+		        	that.showRequests(targetPipe, channelId, pos, localLen);
 		        }
 		        		        
 		        Pipe.moveBlobPointerAndRecordPosAndLength(pos, (int)localLen, targetPipe);  

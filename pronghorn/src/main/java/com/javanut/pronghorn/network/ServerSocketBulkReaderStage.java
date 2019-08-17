@@ -42,7 +42,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 					@Override
 					public void accept(SelectionKey selection) {
 						
-						dataReader.hasRoomForMore &= processSelection(selection);						
+						dataReader.hasRoomForMore &= processSelection(ServerSocketBulkReaderStage.this, selection);						
 						dataReader.doneSelectors.add(selection);//remove them all..
 					}
 		    });
@@ -60,7 +60,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        
 	        Number dsr = graphManager.defaultScheduleRate();
 	        if (dsr!=null) {
-	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
+	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/4, this);
 	        }
 	               
 			//        //If server socket reader does not catch the data it may be lost
@@ -151,9 +151,9 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    	   		///////////////////
 	    	   		//after this point we are always checking for new data work so always record this
 	    	   		////////////////////
-	    	    	if (null != this.didWorkMonitor) {
-	    	    		this.didWorkMonitor.published();
-	    	    	}
+					//	    	    	if (null != this.didWorkMonitor) {
+					//	    	    		this.didWorkMonitor.published();
+					//	    	    	}
 	    	   		
 
 	    	        ////////////////////////////////////////
@@ -216,33 +216,40 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 
 		}
 
-		private boolean processSelection(SelectionKey selection) {
+		private static boolean processSelection(ServerSocketBulkReaderStage that, SelectionKey selection) {
 			
-			assert isRead(selection) : "only expected read"; 
+			assert that.isRead(selection) : "only expected read"; 
 			//get the context object so we know what the channel identifier is
 			
 			final long channelId = ((ConnectionContext)selection.attachment()).getChannelId();
 			assert(channelId>=0);
-			BaseConnection cc = dataReader.coordinator.lookupConnectionById(channelId);
-			Pipe<SocketDataSchema> pipe = output[(int)channelId%output.length];
-			//logger.info("\nnew key selection in reader for connection {}",channelId);
+			final BaseConnection cc = that.dataReader.coordinator.lookupConnectionById(channelId);
 			
 			if (null != cc) {
-				if (!dataReader.coordinator.isTLS) {	
-					return (pumpByteChannelIntoPipe(this, pipe, cc)==1);
-				} else {
-					handshakeTaskOrWrap(cc);
-					return (pumpByteChannelIntoPipe(this, pipe, cc)==1);
-				}		
+				return processNormal(that, channelId, cc);		
 			} else {				
-				try {
-					((SocketChannel) selection.channel()).close();
-				} catch (IOException e) {				
-				}
-				
-				return true;
+				return that.processClose(selection);
 			}
 
+		}
+
+		private static boolean processNormal(ServerSocketBulkReaderStage that, long channelId, final BaseConnection cc) {
+			//logger.info("\nnew key selection in reader for connection {}",channelId);
+			if (!that.dataReader.coordinator.isTLS) {	
+				return (pumpByteChannelIntoPipe(that, that.output[(int)channelId%that.output.length], cc)==1);
+			} else {
+				handshakeTaskOrWrap(cc);
+				return (pumpByteChannelIntoPipe(that, that.output[(int)channelId%that.output.length], cc)==1);
+			}
+		}
+
+		private boolean processClose(SelectionKey selection) {
+			try {
+				((SocketChannel) selection.channel()).close();
+			} catch (IOException e) {				
+			}
+			
+			return true;
 		}
 
 		private static void handshakeTaskOrWrap(BaseConnection cc) {
@@ -341,24 +348,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 				
 	            try {                
 	                
-	            	//Read as much data as we can...
-	            	//We must make the writing buffers larger based on how many messages we can support
-	            	int readMaxSize = outputPipe.maxVarLen;           	
-	            	long units = outputPipe.sizeOfSlabRing - (Pipe.headPosition(outputPipe)-Pipe.tailPosition(outputPipe));
-	            	units -= reqPumpPipeSpace;
-	            	if (units>0) {
-		            	int extras = (int)units/singleMessageSpace;
-		            	if (extras>0) {
-		            		readMaxSize += (extras*(outputPipe.maxVarLen));
-		            	}
-	            	}
-	            	if (that.readSize==-2) {
-	            		that.readSize = sourceChannel.getOption(StandardSocketOptions.SO_RCVBUF);
-	            	}
-	            	if (that.readSize>10) {
-	            		//never attempt to read more than the known buffer.
-	            		readMaxSize = (int) Math.min(readMaxSize, that.readSize);
-	            	}
+	            	int readMaxSize = computeMaxReadSize(that, outputPipe, sourceChannel);
 
 	                //NOTE: the byte buffer is no longer than the valid maximum length but may be shorter based on end of wrap around
 					int wrkHeadPos = Pipe.storeBlobWorkingHeadPosition(outputPipe);
@@ -383,14 +373,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                //784 needed for 16,  49 byes per request
 	                //System.out.println(len); ServerSocketReaderStage.showRequests=true;
 	                
-	                try {    
-	    				if (null!=that.TCP_QUICKACK_LOCAL) {
-	    					//only for 10+ ExtendedSocketOptions.TCP_QUICKACK
-	    					sourceChannel.setOption(that.TCP_QUICKACK_LOCAL, Boolean.TRUE);
-	    				}
-	    			} catch (IOException e1) {
-	    				//NOTE: may not be supported on on platforms so ignore this 
-	    			}	
+	                attemptSetTcpQuickAckLocal(that, sourceChannel);	
 	        
 	                
 	                assert(that.readCountMatchesLength(len, targetBuffer));
@@ -399,8 +382,6 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 //	                	doneSelectors.add(selection);
 //	                }
 	                if (temp>=0 & cc!=null && cc.isValid() && !cc.isDisconnecting()) { 
-	                
-	                	
 						if (len>0) {
 							return that.publishData(cc.id, cc.getSequenceNo(), outputPipe, len, targetBuffer, true);
 						} else {
@@ -408,46 +389,90 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 							return 1;
 						}
 	                } else {
-	                //	logger.trace("client disconnected, so release connection");
-	                
-	                	if (null!=cc) {
-	                		cc.clearPoolReservation();
-	                	}
-						//client was disconnected so release all our resources to ensure they can be used by new connections.
-	               	
-						//to abandon this must be negative.				
-						int result = that.abandonConnection(cc.id, outputPipe, false);
-						
-	                	if (null!=cc) {
-	                		cc.close();
-	                	}
-	                	return result;
+	                	return disconnectProcessing(that, outputPipe, cc);
 	                }
-
-	            } catch (IOException e) {
-	            	
-	            	    //logger.trace("client closed connection ",e.getMessage());
-	            	
-						boolean isOpen = temp>=0;
-						int result;
-						if (len>0) {			
-							result = that.publishData(cc.id, cc.getSequenceNo(), outputPipe, len, targetBuffer, isOpen);
-						} else {
-							result = that.abandonConnection(cc.id, outputPipe, isOpen);
-						}          	
-	              	   
-						cc.clearPoolReservation(); //TODO: should this be here??
-						if (temp<0) {
-							cc.close();
-						}
-						
-						return result;
+	            } catch (IOException e) {	            	
+	            	    return processException(that, outputPipe, cc, len, targetBuffer, temp);
 	            }
 	        } else {
 	        	//logger.info("\ntry again later, unable to launch do to lack of room in {} ",targetPipe);
 	        	return -1;
 	        }
 	    }
+
+		private static int computeMaxReadSize(final ServerSocketBulkReaderStage that,
+				final Pipe<SocketDataSchema> outputPipe, SocketChannel sourceChannel) throws IOException {
+			//Read as much data as we can...
+			//We must make the writing buffers larger based on how many messages we can support
+			int readMaxSize = outputPipe.maxVarLen;           	
+			long units = outputPipe.sizeOfSlabRing - (Pipe.headPosition(outputPipe)-Pipe.tailPosition(outputPipe));
+			units -= reqPumpPipeSpace;
+			if (units>0) {
+				int extras = (int)units/singleMessageSpace;
+				if (extras>0) {
+					readMaxSize += (extras*(outputPipe.maxVarLen));
+				}
+			}
+			if (that.readSize==-2) {
+				that.readSize = sourceChannel.getOption(StandardSocketOptions.SO_RCVBUF);
+			}
+			if (that.readSize>10) {
+				//never attempt to read more than the known buffer.
+				readMaxSize = (int) Math.min(readMaxSize, that.readSize);
+			}
+			return readMaxSize;
+		}
+
+		private static void attemptSetTcpQuickAckLocal(final ServerSocketBulkReaderStage that,
+				SocketChannel sourceChannel) {
+			try {    
+				if (null!=that.TCP_QUICKACK_LOCAL) {
+					//only for 10+ ExtendedSocketOptions.TCP_QUICKACK
+					sourceChannel.setOption(that.TCP_QUICKACK_LOCAL, Boolean.TRUE);
+				}
+			} catch (IOException e1) {
+				//NOTE: may not be supported on on platforms so ignore this 
+			}
+		}
+
+		private static int disconnectProcessing(final ServerSocketBulkReaderStage that,
+				final Pipe<SocketDataSchema> outputPipe, final BaseConnection cc) {
+			//	logger.trace("client disconnected, so release connection");
+			
+				if (null!=cc) {
+					cc.clearPoolReservation();
+				}
+				//client was disconnected so release all our resources to ensure they can be used by new connections.
+			
+				//to abandon this must be negative.				
+				int result = that.abandonConnection(cc.id, outputPipe, false);
+				
+				if (null!=cc) {
+					cc.close();
+				}
+				return result;
+		}
+
+		private static int processException(final ServerSocketBulkReaderStage that,
+				final Pipe<SocketDataSchema> outputPipe, final BaseConnection cc, long len, ByteBuffer[] targetBuffer,
+				long temp) {
+			//logger.trace("client closed connection ",e.getMessage());
+        	
+			boolean isOpen = temp>=0;
+			int result;
+			if (len>0) {			
+				result = that.publishData(cc.id, cc.getSequenceNo(), outputPipe, len, targetBuffer, isOpen);
+			} else {
+				result = that.abandonConnection(cc.id, outputPipe, isOpen);
+			}          	
+          	   
+			cc.clearPoolReservation(); //TODO: should this be here??
+			if (temp<0) {
+				cc.close();
+			}
+			
+			return result;
+		}
 
 		private boolean collectRemainingCount(ByteBuffer[] b) {
 			r1 = b[0].remaining();
