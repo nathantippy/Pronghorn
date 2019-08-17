@@ -9,10 +9,12 @@ public final class SVGImage {
 	private final AppendableProxy target;
 	
 	private final SVGShape shape;	
+	private final SVGPoints points;
 	
 	public SVGImage(AppendableProxy target) {
 		this.target = target;
 		this.shape = new SVGShape(target, this);
+		this.points = new SVGPoints(target, shape);
 	}
 	
 	public SVGImage desc(String desc) {
@@ -36,26 +38,42 @@ public final class SVGImage {
 	
 	public final SVGShape rect(int x, int y, int width, int height) {
 		
-		target.append("<circle ");
+		target.append("<rect ");
 		Appendables.appendValue(target, "x='",x,"' ");
 		Appendables.appendValue(target, "y='",y,"' ");
 		Appendables.appendValue(target, "width='",width,"' ");
 		Appendables.appendValue(target, "height='",height,"'");
 		
 		return shape;		
-}
+	}
+
+	public final SVGPoints polyline() {
+			
+			target.append("<polyline points=\"");
+			
+			return points;		
+	}
+	
+	
+	
 	
 	//TODO: ellipse
 	//TODO: line
-	//TODO: path
 	//TODO: polygon
 	//TODO: polyline
+	//TODO: path
 	
 	
 	 //shapes: 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline' and 'rect'. 
 	 
-
-
+//	<polyline fill="none" stroke="blue" stroke-width="10" 
+//            points="50,375
+//                    150,375 150,325 250,325 250,375
+//                    350,375 350,250 450,250 450,375
+//                    550,375 550,175 650,175 650,375
+//                    750,375 750,100 850,100 850,375
+//                    950,375 950,25 1050,25 1050,375
+//                    1150,375" />
 	
 	
 	

@@ -75,11 +75,15 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
      * @param x needed value
      */
     protected static <T extends MessageSchema<T>> void checkLimit(DataOutputBlobWriter<T> that, int x) {
-    	if (that.length()+x > that.backingPipe.maxVarLen ) {
+    	
+    	//TODO: disable this checking once we know???
+    	assert(that.activePosition>=that.startPosition) : "active must be after start";
+    	if ((that.activePosition-that.startPosition)+x > that.backingPipe.maxVarLen ) {
     		throw new RuntimeException("The writer is limited to a maximum length of "+that.backingPipe.maxVarLen
     				                  +". Write less data or declare a larger field. Already wrote "
     				                  +(that.activePosition-that.startPosition)+" at position "+that.activePosition+" attempting to add "+x);
     	}
+    	
     }
 
     public static <T extends MessageSchema<T>> DataOutputBlobWriter<T> openField(final DataOutputBlobWriter<T> writer) {
@@ -89,17 +93,19 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
 	public static <T extends MessageSchema<T>> DataOutputBlobWriter<T> openFieldAtPosition(final DataOutputBlobWriter<T> writer,
 																		int workingBlobHeadPosition) {
 		assert(workingBlobHeadPosition>=0) : "working head position must not be negative";
-		writer.backingPipe.openBlobFieldWrite();
+		assert(writer.backingPipe.openBlobFieldWrite());
         //NOTE: this method works with both high and low APIs.
-		writer.startPosition = writer.activePosition = (writer.byteMask & workingBlobHeadPosition);
+		
+		final int start = (writer.byteMask & workingBlobHeadPosition);
+		writer.startPosition = writer.activePosition = start;
         //without any index we can write all the way up to maxVarLen;
-		writer.lastPosition = writer.startPosition + writer.backingPipe.maxVarLen;
+		writer.lastPosition = start + writer.backingPipe.maxVarLen;
         //with an index we are limited because room is saved for type data lookup.
-        writer.backPosition = writer.startPosition + Pipe.blobIndexBasePosition(writer.backingPipe);
+        writer.backPosition = start + Pipe.blobIndexBasePosition(writer.backingPipe);
         //this is turned on when callers begin to add index data
         writer.structuredWithIndexData = false;
         if (writer.backingPipe.sizeOfBlobRing>1) {
-        	DataOutputBlobWriter.setStructType(writer, -1);//clear any previous type
+        	DataOutputBlobWriter.write32(writer.byteBuffer, writer.byteMask, writer.startPosition+Pipe.blobIndexBasePosition(writer.backingPipe), -1);//clear any previous type
         }
         return writer;
 	}
@@ -362,16 +368,20 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     }
 
     public static <T extends MessageSchema<T>> int length(DataOutputBlobWriter<T> writer) {
-       
-    	return dif(writer, writer.startPosition, writer.activePosition);
+        assert(writer.activePosition>=writer.startPosition) : "active must be after start";
+        return writer.activePosition-writer.startPosition;
+    //	return dif(writer, writer.startPosition, writer.activePosition);
 
     }
 
-	private static <T extends MessageSchema<T>> int dif(DataOutputBlobWriter<T> writer, int pos1, int pos2) {
-		return (pos2>=pos1) 
-				? (pos2-pos1) 
-				: (writer.backingPipe.sizeOfBlobRing - (writer.byteMask & pos1))+(pos2 & writer.byteMask);
-	}
+//	private static <T extends MessageSchema<T>> int dif(DataOutputBlobWriter<T> writer, int pos1, int pos2) {
+//		if (pos2<pos1) {
+//			new Exception("err "+pos1+"  "+pos2).printStackTrace();
+//		}
+//		return (pos2>=pos1) 
+//				? (pos2-pos1) 
+//				: (writer.backingPipe.sizeOfBlobRing - (writer.byteMask & pos1))+(pos2 & writer.byteMask);
+//	}
 	
 	@Override
     public byte[] toByteArray() {

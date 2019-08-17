@@ -786,10 +786,26 @@ public class Appendables {
     	//value = value & ((1<<bits)-1);//we want only the lowest bits
     	
     	try {
+    		target.append("0x");
+    	} catch (IOException ex) {
+			throw new RuntimeException(ex); 
+		}
+    	
+    	return appendFixedHexDigitsRaw(target, value, bits);
+    }
+
+    /*
+     * 
+     * In order to render an 8 bit number the bits must be set to 8. note that bits can only be in units of 4.
+     */
+    public static <A extends Appendable> A appendFixedHexDigitsRaw(A target, int value, int bits) {
+
+    	//value = value & ((1<<bits)-1);//we want only the lowest bits
+    	
+    	try {
 	        //round up to next group of 4
 	        bits = ((bits+3)>>2)<<2;
 	        
-	        target.append("0x");
 	        int nextValue = value;
 	        while (bits>4) {            
 	            bits -= 4;
@@ -804,7 +820,6 @@ public class Appendables {
 			throw new RuntimeException(ex); 
 		}
     }
-
     
     public static <A extends Appendable> A appendClass(A target, Class clazz, Class clazzParam) {
     	try {

@@ -397,17 +397,17 @@ public class ServerNewConnectionStage extends PronghornStage{
 		                    
 		if (0 != (SelectionKey.OP_ACCEPT & readyOps)) {
 	        //for testing only:  this block limits the servder so only 1 client may handshake at a time.
-			if (limitHandshakeConcurrency && coordinator.isTLS && null!=currentHandshake) {					
-				HandshakeStatus status = currentHandshake.getHandshakeStatus();					
-				if (status == HandshakeStatus.FINISHED || status== HandshakeStatus.NOT_HANDSHAKING) {
-					currentHandshake = null;
-					//logger.trace("\nfinished one more handshake");
-					Thread.yield();
-				} else {
-					doWork = false;
-					return;//do not accept new connections until this handshake is complete.
-				}					
-			}
+//			if (limitHandshakeConcurrency && coordinator.isTLS && null!=currentHandshake) {					
+//				HandshakeStatus status = currentHandshake.getHandshakeStatus();					
+//				if (status == HandshakeStatus.FINISHED || status== HandshakeStatus.NOT_HANDSHAKING) {
+//					currentHandshake = null;
+//					//logger.trace("\nfinished one more handshake");
+//					Thread.yield();
+//				} else {
+//					doWork = false;
+//					return;//do not accept new connections until this handshake is complete.
+//				}					
+//			}
 			
 			
 			ServiceObjectHolder<ServerConnection> holder = ServerCoordinator.getSocketChannelHolder(coordinator);
@@ -428,29 +428,28 @@ public class ServerNewConnectionStage extends PronghornStage{
 			        	  
 			              channel.configureBlocking(false);
 			    			            
-			              //TCP_NODELAY is required for HTTP/2 get used to it being on now.
+			              //TCP_NODELAY true is required for HTTP/2 get used to it being on now.
 			              //channel.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE); //NOTE: may need to turn off for high volume..  
-			              channel.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE); //NOTE: may need to turn off for high volume..  
-			                 
+			             // channel.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE); //NOTE: may need to turn off for high volume..  
+			             //AS NOTED THIS IS FALSE FOR HIGHER VOLUME
+			              channel.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE);
 			              
 			              // https://www.techrepublic.com/article/take-advantage-of-tcp-ip-options-to-optimize-data-transmission/
 			              // optimize for small messages
 			              
-			              
-			              channel.socket().setPerformancePreferences(0,1,2);//(1, 0, 2);			        	              
+			              //FOR BANDWIDTH 
+			              channel.socket().setPerformancePreferences(0,1,2);//(1, 0, 2); //2 1 0			        	              
 
 			           	  //by design we set this in both places
 			              if (coordinator.isTLS) {
 			            	  channel.socket().setReceiveBufferSize(1<<15);//NOTE: must be 15 at least for TLS
 			            	  channel.socket().setSendBufferSize(1<<15);
 			              } else {
-			            	  channel.socket().setReceiveBufferSize(1<<14);
+			            	  channel.socket().setReceiveBufferSize(1<<16);
+			            	  //channel.socket().setSendBufferSize(1<<16);
 			              }
-			              
-			           	  //turned off for next round of testing
-			           	  //channel.setOption(StandardSocketOptions.SO_SNDBUF, 1<<9);
-			          	 // channel.socket().setSendBufferSize(1<<9);
-			           		           	  
+			              //channel.socket().setKeepAlive(true);
+			             		              
 			           	  
 			              SSLEngine sslEngine = null;
 			              if (coordinator.isTLS) {

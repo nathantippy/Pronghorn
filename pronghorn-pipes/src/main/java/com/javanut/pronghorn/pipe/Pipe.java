@@ -750,10 +750,11 @@ public class Pipe<T extends MessageSchema<T>> {
      * Prep this pipe for writing a blob var len field.
      * Set the internal state for checking if the blob write is in progress.
      */
-    public void openBlobFieldWrite() {  
+    public boolean openBlobFieldWrite() {  
     	//System.out.println("open stream on "+id);
         assert(recordBlobStateForAssertIn()); 
         assert(recordOpenStack());
+        return true;
     }
 
 	private boolean recordBlobStateForAssertIn() {
@@ -4979,7 +4980,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	 * @return DataOutputBlobWriter
 	 */
 	public static <S extends MessageSchema<S>> DataOutputBlobWriter<S> openOutputStream(Pipe<S> pipe) {
-		return DataOutputBlobWriter.openField(pipe.blobWriter);
+		return DataOutputBlobWriter.openFieldAtPosition(pipe.blobWriter, Pipe.getWorkingBlobHeadPosition(pipe));
 	}
 	
 	/**

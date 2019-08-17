@@ -841,21 +841,21 @@ public class TrieParserReader {
 		}
 	}
 
-	private static boolean scanBytes3(TrieParserReader reader, final byte[] source, final int srcMask,
-			final byte caseMask, final int t1, final int t2, final short[] data, int t11, int t21, int r) {
+	private static boolean scanBytes3(final TrieParserReader reader, final byte[] source, final int srcMask,
+									  final byte caseMask, final int t1, final int t2, final short[] data, int t11, int t21, int r) {
+		
 		if (t11+r < data.length) {
-			int total = 0;
-			while (--r >= 0) {		
-				
+			final int secondMask = caseMask & 0xFF;
+			//int total = 0;
+			while (--r >= 0) {
 				
 				//repeating this if is probably a bad idea lets do a logic approach instead
-				if ((caseMask & data[t11++]) != (caseMask & 0xFF & source[srcMask & (t21++)]) ) {
+				if ((caseMask & data[t11++]) != (secondMask & source[srcMask & (t21++)]) ) {
 					return false;
 				}				
 				
 				//xor
 				//total |= (((caseMask & data[t11++]) ^ (caseMask & 0xFF & source[srcMask & (t21++)]) ));
-				
 				
 			}
 			//if (total==0) {
@@ -999,7 +999,7 @@ public class TrieParserReader {
 
 		//common pattern
 		if (!hasSafePoint) {
-			if (reader.altStackPos <= 0) {                                
+			if (reader.altStackPos <= 0) {  
 				//we have NO safe point AND we found a non match in the sequence
 				//this will never match no matter how much data is added so return the noMatch code.
 				reader.normalExit=false;
@@ -1008,7 +1008,6 @@ public class TrieParserReader {
 				reader.altStackPos = loadupNextChoiceFromStack(reader, trie.data, reader.altStackPos);                           
 			}
 		} else {
-			
 			reader.normalExit=false;
 			reader.result = useSafePoint(reader);
 			
@@ -1294,17 +1293,20 @@ public class TrieParserReader {
 		//we do not yet have enough info to decide if this is the end or not.
 	}
 	
+
 	private static int parseBytes(TrieParserReader reader, 
 			                      final byte[] source, final int sourcePos, 
 			                      final long remainingLen, 
 			                      final int sourceMask, final short stopValue) {              
 				
 		int x = sourcePos;
-		//int lim = remainingLen<=sourceMask ? (int)remainingLen : sourceMask+1;
-		int lim = remainingLen>sourceMask ? sourceMask+1 :(int)remainingLen;
+		
+		//Checked: this is most always true.
+		int lim = remainingLen<=sourceMask ? (int)remainingLen : sourceMask+1;
 				
-		do {
-		} while ( ((stopValue!=source[sourceMask & x++])) && (--lim > 0));         
+		byte s = (byte)stopValue;		
+		do {//TODO: can check loop size and remove sourceMask& in some cases..
+		} while ( ((s!=source[sourceMask & x++])) && (--lim > 0));         
 
 		return parseBytesApply(reader, sourcePos, sourceMask, stopValue, x, lim);
 	}

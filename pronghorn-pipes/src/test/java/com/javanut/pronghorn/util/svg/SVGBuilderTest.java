@@ -1,13 +1,25 @@
 package com.javanut.pronghorn.util.svg;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import java.awt.Color;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 
 import org.junit.Test;
 
 import com.javanut.pronghorn.util.AppendableProxy;
 
 public class SVGBuilderTest {
-
+	
+	//////////
+	//  https://www.w3.org/TR/SVGMobile12/
+	//////////
+	
 	@Test
 	public void testOpenClose() {
 		
@@ -45,9 +57,6 @@ public class SVGBuilderTest {
 		
 		svgImage.closeSVG();
 		
-			
-		System.out.println(builder.toString());
-		
 		String expected = "<?xml version=\"1.0\"?>\n" + 
 				"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" viewBox=\"1 2 3 4\">\n"
 				+ "<circle cx='10' cy='11' r='12' fill='values?'/>\n"
@@ -55,10 +64,7 @@ public class SVGBuilderTest {
 		
 		assertEquals(expected,  builder.toString());	
 	}
-	
-	
-	
-	
-	
+
+	//TODO: add tests for all the shapes.	
 	
 }

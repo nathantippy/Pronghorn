@@ -34,8 +34,12 @@ public class PipeWorkWatcher {
 		
 		if (inputs.length >= 256) {
 			   groupBits = 6;  //64 groups absolute max
-		} else {			
-			   groupBits = 0;
+		} else {		
+			   if (inputs.length >=64 ) {
+				   groupBits = 2;
+			   } else {
+				   groupBits = 0;
+			   }
 			
 		}
 		assert(groupBits<=6);//group bits may not be larger since we use long for mask...
