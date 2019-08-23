@@ -49,7 +49,7 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	private TLSCertificates serverTLS = TLSCerts.define();
 	private BridgeConfigStage configStage = BridgeConfigStage.Construction;
 	
-	private int maxRequestSize = 1<<9;//default of 1024	
+	private int maxRequestSize = 1<<12;//default of 1024	
 	private final static int ICO_FILE_SIZE = 1<<11;//2k minimum to match ico file size, TODO: reduce ico to 1K?
 	
 	private int maxResponseSize = ICO_FILE_SIZE;//default of 2k
@@ -58,7 +58,7 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	private int maxQueueIn = 8; ///from router to modules
 	private int maxQueueOut = 8; //from orderSuper to ChannelWriter
 	
-	private int socketToParserBlocks = 8;
+	private int socketToParserBlocks = 128;//from bulkRouter to http1x router
 	private int minMemoryInputPipe = 1<<10; //1Kminum input pipe.
 	
 	public final PipeConfigManager pcmIn;

@@ -450,25 +450,19 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 
 
     
-    private static int parsePipe(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
+    private static int parsePipe(final HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
 		//we can accumulate above but we can not parse or continue until this pipe is clear    
 	   	if (null == that.blockedOnOutput[idx]) {	    	  
 	        return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 0;
     	} else {
-    		return parsePipeBlockedReset(that, idx);
+    		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
+				that.blockedOnOutput[idx] = null;
+				return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 1;
+			} else {
+				return -1;
+			}
     	}
 	}
-
-
-	private static int parsePipeBlockedReset(HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
-		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
-			that.blockedOnOutput[idx] = null;
-			return 1;
-		} else {
-			return -1;
-		}
-	}
-
 
 
 	private int parseAvail(final int idx) {

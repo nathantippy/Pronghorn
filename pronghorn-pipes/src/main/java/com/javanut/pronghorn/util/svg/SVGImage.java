@@ -10,9 +10,13 @@ public final class SVGImage {
 	
 	private final SVGShape shape;	
 	private final SVGPoints points;
+	private final SVGText text;
+	private final SVGDefs defs;
 	
 	public SVGImage(AppendableProxy target) {
 		this.target = target;
+		this.defs = new SVGDefs(target, this);
+		this.text = new SVGText(target, this);
 		this.shape = new SVGShape(target, this);
 		this.points = new SVGPoints(target, shape);
 	}
@@ -24,6 +28,24 @@ public final class SVGImage {
 	public SVGImage desc(AppendableWriter desc) {
 		desc.writeTo(target.append("<desc>")).append("</desc>\n");
 		return this;
+	}
+
+
+		
+		
+	
+	public final SVGDefs defs() {
+		target.append("<defs>");
+				
+		return defs;
+	}
+	  
+	public final SVGText text(int x, int y) {
+		target.append("<text ");
+		Appendables.appendValue(target, "x='",x,"' ");
+		Appendables.appendValue(target, "y='",y,"' ");
+		
+		return text;
 	}
 	
 	public final SVGShape circle(int x, int y, int r) {
@@ -85,6 +107,7 @@ public final class SVGImage {
 //	  <path d='M 10 19 L 15 23 20 19' stroke='black' stroke-width='2'/>  -- fluent until end of path
 	
 	
+  
 	public final void closeSVG() {
 		
 		target.append("</svg>\n");			

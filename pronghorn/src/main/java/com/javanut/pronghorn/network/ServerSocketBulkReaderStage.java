@@ -67,7 +67,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        
 	        Number dsr = graphManager.defaultScheduleRate();
 	        if (dsr!=null) {
-	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/4, this);
+	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
 	        }
 	               
 			//        //If server socket reader does not catch the data it may be lost
