@@ -302,8 +302,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 			responsePipeLineIdx = beginningProcessing(cc.id, cc);
 
 			if (responsePipeLineIdx >= 0) {	
-				assert(output[responsePipeLineIdx].maxVarLen >= input.maxVarLen) : "out: "+output[responsePipeLineIdx].maxVarLen+" in: "+input.maxVarLen;
-				//System.out.println("new lock "+cc.id+"  "+responsePipeLineIdx);
+
 				return (pumpByteChannelIntoPipe(input, cc.id, 
 						cc.getSequenceNo(), output[responsePipeLineIdx], 
 						newBeginning, cc)==1);

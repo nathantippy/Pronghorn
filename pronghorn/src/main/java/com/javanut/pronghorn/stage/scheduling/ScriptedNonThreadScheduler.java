@@ -813,7 +813,8 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 				while (totalRequiredSleep>1_000) {
 					loopTop = now;
 			
-					if (totalRequiredSleep>20_000) {
+					//HACK test
+					if (totalRequiredSleep>40_000) {
 						LockSupport.parkNanos(totalRequiredSleep);	
 						//TODO:try this hack...
 						//https://blog.hazelcast.com/locksupport-parknanos-under-the-hood-and-the-curious-case-of-parking/

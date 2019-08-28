@@ -629,7 +629,9 @@ public class NetGraphBuilder {
 		//System.out.println("selected groups:"+selectedGroups+" tracks:"+selectedTracks);
 	//	return ((selectedTracks*selectedGroups)<<32)|1;
 		//change to long to return groups and tracks...
-		return (selectedGroups<<32)|selectedTracks;
+	//	return (selectedGroups<<32)|selectedTracks; //this works well on large box but not on my notebook.
+		return (selectedTracks<<32)|selectedGroups; //NOTE: This works on AWS test for 25% faster now that we have 7 instead of 4
+		
 
 	}
 
@@ -657,7 +659,7 @@ public class NetGraphBuilder {
 				coordinator.processNota(graphManager, readerStage);
 			} else {
 				
-				int varLen = PronghornStage.maxVarLength(encryptedIncomingGroup)>>1; //must be smaller than the outgoing pipe var
+				int varLen = PronghornStage.maxVarLength(encryptedIncomingGroup)<<3; //needed to buffer many incoming requests.
 				
 				Pipe<SocketDataSchema>[] localPipe = null;
 				
@@ -665,7 +667,7 @@ public class NetGraphBuilder {
 				if (tracks<1) {
 					throw new UnsupportedOperationException();
 				}
-								
+					
 				localPipe = Pipe.buildPipes(routers, 
 						SocketDataSchema.instance.newPipeConfig(
 								pipes,

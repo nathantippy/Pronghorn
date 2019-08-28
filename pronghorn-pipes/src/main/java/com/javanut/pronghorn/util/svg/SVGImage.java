@@ -76,13 +76,15 @@ public final class SVGImage {
 			return points;		
 	}
 	
+	//////////
+	//  https://www.w3.org/TR/SVGMobile12/
+	//////////
 	
 	
 	
 	//TODO: ellipse
 	//TODO: line
 	//TODO: polygon
-	//TODO: polyline
 	//TODO: path
 	
 	

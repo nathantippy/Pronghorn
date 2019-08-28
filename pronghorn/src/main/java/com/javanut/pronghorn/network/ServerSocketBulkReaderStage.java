@@ -101,7 +101,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    private final ServerSocketBulkReaderStageDataReader dataReader;
 
 		public static boolean showRequests = false;
-	    
+
 	    private boolean shutdownInProgress;
 	    private final String label;
 	    	        
@@ -330,7 +330,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	            	
 	            	//we often select ALL the sent fields so what is going wrong??
 	            	//System.out.println(selectedKeys.size()+" selection block "+System.currentTimeMillis()); 
-	            	
+	       
 	            	return true;
 	            } else {
 	     //       	nextSelect = System.nanoTime() + 20_000L;
@@ -390,6 +390,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	                	that.totalRead += len;
 	                	//System.out.println("done read "+len+" total "+that.totalRead);
 	                } while (temp>0 && isStreaming); //for multiple in flight pipelined must keep reading...
+	                
+	           
 	                
 	                //784 needed for 16,  49 byes per request
 	                //System.out.println(len); ServerSocketReaderStage.showRequests=true;
