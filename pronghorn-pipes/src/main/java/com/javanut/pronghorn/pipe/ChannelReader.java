@@ -7,7 +7,7 @@ import java.io.ObjectInput;
 import com.javanut.pronghorn.util.TrieParser;
 import com.javanut.pronghorn.util.TrieParserReader;
 
-public abstract class ChannelReader extends InputStream implements ObjectInput, TextReader {
+public abstract class ChannelReader extends ChannelReaderSimple implements ObjectInput, TextReader {
 
 	//Max bytes consumed by a packed integer
 	public static final int PACKED_INT_SIZE = 5;
@@ -17,11 +17,6 @@ public abstract class ChannelReader extends InputStream implements ObjectInput, 
 		
 	public static final int BOOLEAN_SIZE = 1;
 	
-	/**
-	 * Will give how many bytes are available right now
-	 * @return the number of bytes
-	 */
-	public abstract int available();
 
 	/**
 	 * Reads bytes from ChannelReader depending on leading short for length
@@ -118,12 +113,9 @@ public abstract class ChannelReader extends InputStream implements ObjectInput, 
 	 * @param target to receive data from ChannelReader
 	 */
 	public abstract void readInto(Externalizable target);
-
+ 
 	public abstract void readInto(ChannelWriter writer, int length);
 	
-	public abstract int readInto(byte[] b, int off, int len, int mask);
-	 
-
 	/**
 	 * Reads data from ChannelReader and passes it to Object
 	 * @return Object with data from ChannelReader

@@ -91,7 +91,7 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     }
 
 	public static <T extends MessageSchema<T>> DataOutputBlobWriter<T> openFieldAtPosition(final DataOutputBlobWriter<T> writer,
-																		int workingBlobHeadPosition) {
+																		                   int workingBlobHeadPosition) {
 		assert(workingBlobHeadPosition>=0) : "working head position must not be negative";
 		assert(writer.backingPipe.openBlobFieldWrite());
         //NOTE: this method works with both high and low APIs.
@@ -101,12 +101,17 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
         //without any index we can write all the way up to maxVarLen;
 		writer.lastPosition = start + writer.backingPipe.maxVarLen;
         //with an index we are limited because room is saved for type data lookup.
-        writer.backPosition = start + Pipe.blobIndexBasePosition(writer.backingPipe);
+        final int blobIndexBasePosition = Pipe.blobIndexBasePosition(writer.backingPipe);
+		writer.backPosition = start + blobIndexBasePosition;
         //this is turned on when callers begin to add index data
         writer.structuredWithIndexData = false;
-        if (writer.backingPipe.sizeOfBlobRing>1) {
-        	DataOutputBlobWriter.write32(writer.byteBuffer, writer.byteMask, writer.startPosition+Pipe.blobIndexBasePosition(writer.backingPipe), -1);//clear any previous type
+        
+        if (writer.backingPipe.sizeOfBlobRing > 1) {
+        	DataOutputBlobWriter.write32(writer.byteBuffer, writer.byteMask, 
+        			                     writer.startPosition + blobIndexBasePosition,
+        			                     -1);//clear any previous type
         }
+        
         return writer;
 	}
     

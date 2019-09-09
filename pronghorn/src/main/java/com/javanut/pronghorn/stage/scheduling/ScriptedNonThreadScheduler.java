@@ -814,8 +814,9 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 			if (0!=(nowMS&7)) {// 1/8 of the time every 1 ms we take a break for task manager
 				long loopTop = -1;				
 				while (totalRequiredSleep>1_000) {
-					loopTop = now;			
-					if (totalRequiredSleep>60_000) {
+					loopTop = now;
+			
+					if (totalRequiredSleep>30_000) {
 						LockSupport.parkNanos(totalRequiredSleep);
 						//https://blog.hazelcast.com/locksupport-parknanos-under-the-hood-and-the-curious-case-of-parking/
 					} else {

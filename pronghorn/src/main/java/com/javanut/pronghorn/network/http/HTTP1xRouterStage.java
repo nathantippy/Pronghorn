@@ -757,10 +757,14 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 				if (newPos!=-1) {
 					that.releaseInputSlabPos[idx] = newPos;
 				} else {
-					System.out.println("why is this -1 vvalue here??? its forcing the lock.");
+				//	that.sendError(that.releaseChannel[idx], idx, 404);
+					
+					//errorReporter2.sendError(ccId, 400)
+						//? (requestContext | ServerCoordinator.CLOSE_CONNECTION_MASK) 
+						//: ServerCoordinator.INCOMPLETE_RESPONSE_MASK;
+							System.out.println("TODO: need to return 404 error for this case, not yet done...");
 				}
-				that.releaseSequences[idx] = that.sequences[idx];
-								
+				that.releaseSequences[idx] = that.sequences[idx];								
 				that.inputSlabPos[idx] = -1;
 				
 		}

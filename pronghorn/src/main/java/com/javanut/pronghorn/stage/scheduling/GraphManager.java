@@ -602,9 +602,10 @@ public class GraphManager {
      * @param gm
      */
 	public static void disableMutation(GraphManager gm) {
+		
 		if (gm.enableMutation) {
 					
-			//logger.info("disable mutation");
+			logger.trace("disable mutation");
 
 			if (gm.telemetryPort > 0) {
 				recordElapsedTime = true; //turn on for the chart data

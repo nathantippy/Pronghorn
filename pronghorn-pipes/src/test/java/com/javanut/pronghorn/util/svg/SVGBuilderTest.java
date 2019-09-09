@@ -63,6 +63,8 @@ public class SVGBuilderTest {
 				+ "</svg>\n";
 		
 		assertEquals(expected,  builder.toString());	
+		
+		
 	}
 
 	//TODO: add tests for all the shapes.	

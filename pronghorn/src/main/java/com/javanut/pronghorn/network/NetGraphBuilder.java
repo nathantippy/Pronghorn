@@ -629,8 +629,8 @@ public class NetGraphBuilder {
 		//System.out.println("selected groups:"+selectedGroups+" tracks:"+selectedTracks);
 	//	return ((selectedTracks*selectedGroups)<<32)|1;
 		//change to long to return groups and tracks...
-	//	return (selectedGroups<<32)|selectedTracks; //this works well on large box but not on my notebook.
-		return (selectedTracks<<32)|selectedGroups; //NOTE: This works on AWS test for 25% faster now that we have 7 instead of 4
+		return (selectedGroups<<32)|selectedTracks; //this works well on large box but not on my notebook.
+		//return (selectedTracks<<32)|selectedGroups; //NOTE: This works on AWS test for 25% faster now that we have 7 instead of 4
 		
 
 	}
@@ -675,10 +675,23 @@ public class NetGraphBuilder {
 								)
 						);
 				
+				//this test did not provide any speed boost so it was turned off, 
+				//     it may be helpfull again in the future for direct device integration..
+				boolean offHeapBlobs = false;
+				if (offHeapBlobs) {
+					int i = localPipe.length;
+					while(--i>=0) {
+						//NOTE: must use with-XX:+UseConcMarkSweepGC because other GC gets lost!!					
+						localPipe[i].moveBlobOffHeap();					
+					}
+				}
+				
 				///
 				//TODO: swap in a test instance to generate fast test data.
 				///
+				logger.trace("ServerSocketBulkReaderStage begin new "+x);
 				ServerSocketBulkReaderStage readerStage = ServerSocketBulkReaderStage.newInstance(graphManager, localPipe, coordinator);
+				logger.trace("ServerSocketBulkReaderStage end new "+x);
 				coordinator.processNota(graphManager, readerStage);
 				Pipe<ReleaseSchema>[] localAck = out[(countOfSocketReaders-x)-1];
 				Pipe<NetPayloadSchema>[] localPayload = in[x];				
@@ -695,7 +708,7 @@ public class NetGraphBuilder {
 																									coordinator);
 					coordinator.processNota(graphManager, routerStage);
 				}
-				
+				logger.trace("ServerSocketBulkReaderStage end consumers "+x);
 				
 			}
 			

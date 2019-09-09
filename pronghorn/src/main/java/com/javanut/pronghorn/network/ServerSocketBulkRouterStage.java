@@ -13,6 +13,7 @@ import com.javanut.pronghorn.network.schema.NetPayloadSchema;
 import com.javanut.pronghorn.network.schema.ReleaseSchema;
 import com.javanut.pronghorn.network.schema.SocketDataSchema;
 import com.javanut.pronghorn.pipe.ChannelReader;
+import com.javanut.pronghorn.pipe.ChannelReaderSimple;
 import com.javanut.pronghorn.pipe.Pipe;
 import com.javanut.pronghorn.stage.PronghornStage;
 import com.javanut.pronghorn.stage.scheduling.GraphManager;
@@ -137,7 +138,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
     
     @Override
     public void run() {
- 
+    	
     //	 blocks = 0;
     	
     	 if(!shutdownInProgress) {
@@ -306,6 +307,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 				return (pumpByteChannelIntoPipe(input, cc.id, 
 						cc.getSequenceNo(), output[responsePipeLineIdx], 
 						newBeginning, cc)==1);
+				
 			} else {
 				
 				//TODO: if this happens many times in a row here we should find the oldest pipe which only has partial
@@ -557,8 +559,11 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
         	assert(channelId == channelId2) : "internal error";
         	long arrivalTime = Pipe.takeLong(input);
         	long hash = Pipe.takeLong(input);
-        	//TODO: do something with this hash value...
-        	ChannelReader reader = Pipe.openInputStream(input);
+        	
+        	ChannelReaderSimple reader = 
+        			//Pipe.openInputStream(input);
+        			Pipe.openChannelReaderSimple(input);
+        	
         	long len = reader.available();//if data is read then we build a record around it
    		    	
         	//TODO: Needed since we set already in previous stage?????        	

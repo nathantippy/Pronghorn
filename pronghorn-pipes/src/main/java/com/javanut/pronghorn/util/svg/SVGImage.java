@@ -12,6 +12,7 @@ public final class SVGImage {
 	private final SVGPoints points;
 	private final SVGText text;
 	private final SVGDefs defs;
+	private final SVGGraphicsElement graphicsElement;
 	
 	public SVGImage(AppendableProxy target) {
 		this.target = target;
@@ -19,6 +20,7 @@ public final class SVGImage {
 		this.text = new SVGText(target, this);
 		this.shape = new SVGShape(target, this);
 		this.points = new SVGPoints(target, shape);
+		this.graphicsElement = new SVGGraphicsElement(target, this);
 	}
 	
 	public SVGImage desc(String desc) {
@@ -30,9 +32,15 @@ public final class SVGImage {
 		return this;
 	}
 
+    public SVGImage comment(String comment) {
+    	
+    	if (comment.contains("--")) {
+    		throw new UnsupportedOperationException();
+    	}    	
+    	target.append("<!--").append(comment).append("-->");
+    	return this;
+    };
 
-		
-		
 	
 	public final SVGDefs defs() {
 		target.append("<defs>");
@@ -42,7 +50,7 @@ public final class SVGImage {
 	  
 	public final SVGText text(int x, int y) {
 		target.append("<text ");
-		Appendables.appendValue(target, "x='",x,"' ");
+		Appendables.appendValue(target, "x='",x,"' "); //can be % in relation to container but...
 		Appendables.appendValue(target, "y='",y,"' ");
 		
 		return text;
@@ -125,6 +133,28 @@ public final class SVGImage {
 		Appendables.appendValue(Appendables.appendValue(target.append(" "),w)," ",h,"\">\n");
 	
 		return new SVGImage(target);
+	}
+
+	//g stack..
+	private int gStack = 0;
+	
+	public SVGGraphicsElement pushGraphicsElement() {
+		
+		target.append("<g ");
+		gStack++;
+		
+		return graphicsElement;
+	}
+
+	public SVGImage popGraphicsElement() {
+		
+		if (gStack<=0) {
+			throw new UnsupportedOperationException();
+		}
+		target.append("</g>\n");
+		gStack--;
+		
+		return this;
 	}
 	
 }

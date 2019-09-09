@@ -436,9 +436,9 @@ public class ServerNewConnectionStage extends PronghornStage{
 			              
 			              // https://www.techrepublic.com/article/take-advantage-of-tcp-ip-options-to-optimize-data-transmission/
 			              // optimize for small messages
-			              
-			              //FOR BANDWIDTH 
-			              channel.socket().setPerformancePreferences(0,1,2);//(1, 0, 2); //2 1 0			        	              
+			           
+			              //latency, bandwith then connection 
+			              channel.socket().setPerformancePreferences(2,0,1);              
 
 			           	  //by design we set this in both places
 			              if (coordinator.isTLS) {

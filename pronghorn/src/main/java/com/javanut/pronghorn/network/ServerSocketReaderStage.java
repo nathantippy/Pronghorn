@@ -116,7 +116,7 @@ public class ServerSocketReaderStage extends PronghornStage {
 
         Number dsr = graphManager.defaultScheduleRate();
         if (dsr!=null) {
-        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
+        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/4, this);
         }
                
 		//        //If server socket reader does not catch the data it may be lost
@@ -633,7 +633,7 @@ public class ServerSocketReaderStage extends PronghornStage {
                 boolean isStreaming = false; //TODO: expose this switch..
                 
                 do {
-                	temp = sourceChannel.read(targetBuffer);
+                	temp = sourceChannel.read(targetBuffer, 0, 2);
                 	if (temp>0){
                 		len+=temp;
                 	}

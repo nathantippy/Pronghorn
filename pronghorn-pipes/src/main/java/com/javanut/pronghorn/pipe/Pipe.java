@@ -24,6 +24,8 @@ import com.javanut.pronghorn.struct.StructRegistry;
 import com.javanut.pronghorn.util.Appendables;
 import com.javanut.pronghorn.util.ma.RunningStdDev;
 
+import sun.misc.Unsafe;
+
 /**
  *
  * Schema aware data pipe implemented as an internal pair of ring buffers.
@@ -501,6 +503,8 @@ public class Pipe<T extends MessageSchema<T>> {
     //      These are the recommended objects to be used for reading and writing streams into the blob
     private DataOutputBlobWriter<T> blobWriter;
     private DataInputBlobReader<T> blobReader;
+    private ChannelReaderSimpleDirectBuffer blobDirectReader;
+    private ByteBuffer[] wrappedDirectWritingBuffers;
     
     //for writes validates that bytes of var length field is within the expected bounds.
     private int varLenMovingAverage = 0;//this is an exponential moving average
@@ -1224,7 +1228,13 @@ public class Pipe<T extends MessageSchema<T>> {
 
 		try {
 			
-			this.blobRing = new byte[sizeOfBlobRing];
+			//only create if we have not already created an off heap edition
+			if (this.blobRing==null || this.blobRing.length!=sizeOfBlobRing) {
+				if (this.blobRing!=null) {
+					log.info("new blobRing created to replace old one due to length change.");
+				}
+				this.blobRing = new byte[sizeOfBlobRing];
+			}
 			this.slabRing = new int[sizeOfSlabRing];
 			
 		    this.pendingReleases = 
@@ -1263,12 +1273,13 @@ public class Pipe<T extends MessageSchema<T>> {
 
 	        //only create if there is a possibility that they may be used.
 	        if (sizeOfBlobRing>0) {
+	       
 	        	this.wrappedBlobReadingRingA = ByteBuffer.wrap(this.blobRing);
 	        	this.wrappedBlobReadingRingB = ByteBuffer.wrap(this.blobRing);
 	        	this.wrappedBlobWritingRingA = ByteBuffer.wrap(this.blobRing);
 	        	this.wrappedBlobWritingRingB = ByteBuffer.wrap(this.blobRing);	        
 	        	this.wrappedBlobConstBuffer = null==this.blobConstBuffer?null:ByteBuffer.wrap(this.blobConstBuffer);
-	        	
+	        		        	
 	        	this.wrappedReadingBuffers = new ByteBuffer[]{wrappedBlobReadingRingA,wrappedBlobReadingRingB}; 
 	        	this.wrappedWritingBuffers = new ByteBuffer[]{wrappedBlobWritingRingA,wrappedBlobWritingRingB};
 	        	
@@ -1278,6 +1289,10 @@ public class Pipe<T extends MessageSchema<T>> {
 	        	//blobReader and writer must be last since they will be checking isInit in construction.
 	        	this.blobReader = createNewBlobReader();
 	        	this.blobWriter = createNewBlobWriter();
+	        	
+	        	//only do if direct...
+	        	this.blobDirectReader = new ChannelReaderSimpleDirectBuffer(this);
+	        	
 	        }
 	        
         } catch (OutOfMemoryError oome) {
@@ -1391,7 +1406,62 @@ public class Pipe<T extends MessageSchema<T>> {
         StackStateWalker.reset(ringWalker, structuredPos);
     }
 
-    /**
+		//rebuilds blobRing off heap, for future tight off heap integrations... NOTE: get the address from this...
+		public void moveBlobOffHeap() {
+		
+				//NOTE: must init this but we will distory it!!
+				this.blobRing = new byte[sizeOfBlobRing]; 
+				
+				Unsafe unsafe = UnsafeUtil.getUnsafe();
+								
+				int arLen = sizeOfBlobRing;
+				long size = Unsafe.ARRAY_BYTE_BASE_OFFSET+((arLen)*Unsafe.ARRAY_BYTE_INDEX_SCALE);//sizeOf(unsafe, blobRing);
+			
+				// use     -XX:MaxDirectMemorySize   ??
+				//System.out.println("create off heap of "+size);
+				
+				//  requires this GC the others are broken.
+				//   -XX:+UseConcMarkSweepGC
+				try {
+					long offheapPointer = unsafe.allocateMemory(size);
+					unsafe.copyMemory(
+							        this.blobRing,     // source object
+					                0,              // source offset is zero - copy an entire object
+					                null,           // destination is specified by absolute address, so destination object is null
+					                offheapPointer, // destination address
+					                size
+					); // test object was copied to off-heap
+					//unsafe.putByte(offheapPointer+Unsafe.ARRAY_BYTE_BASE_OFFSET, (byte)0);
+				
+					long pointerOffset = unsafe.objectFieldOffset(Pipe.class.getDeclaredField("blobRing"));	
+			
+					long addr1 = unsafe.getAddress(UnsafeUtil.getAddressOfObject(unsafe,this)+pointerOffset);
+					
+					
+					//only works when we are not using compressed opps??
+					
+						unsafe.putAddress(UnsafeUtil.getAddressOfObject(unsafe,this)+pointerOffset, offheapPointer);						
+					    //unsafe.putLong(ptr, pointerOffset, (offheapPointer));
+					 
+						long addr2 = unsafe.getAddress(UnsafeUtil.getAddressOfObject(unsafe,this)+pointerOffset);
+						
+						assert(addr1 != addr2);
+						
+			} catch (SecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+	/**
      * Publish all the batched up publish calls.
      * @param pipe to have publications released.
      */
@@ -1853,6 +1923,42 @@ public class Pipe<T extends MessageSchema<T>> {
 		((Buffer)bBuf).limit(endPos>output.sizeOfBlobRing ? output.blobMask & endPos: 0);
 		
 		return output.wrappedWritingBuffers;
+	}
+	
+	public static <S extends MessageSchema<S>> ByteBuffer[] wrappedWritingDirectBuffers(int originalBlobPosition,
+				Pipe<S> output, int maxLen) {
+
+		if (null == output.wrappedDirectWritingBuffers) {
+			//In this case we are writing directly to the byte buffer and we must release the old blob
+			//TODO: we may find a way to avoid creation of it later
+			output.blobRing = null;
+			
+			if (null == output.directBlob) {
+				initDirectBuffer(output);
+			}
+			
+        	ByteBuffer directA = output.directBlob.duplicate();
+        	ByteBuffer directb = output.directBlob.duplicate();	        
+        	
+        	output.wrappedDirectWritingBuffers = new ByteBuffer[]{directA,directb};
+			
+		}
+		
+		assert(maxLen>=0);
+		
+		int writeToPos = originalBlobPosition & Pipe.blobMask(output); //Get the offset in the blob where we should write
+		int endPos = writeToPos+maxLen;
+		
+		ByteBuffer aBuf = output.wrappedDirectWritingBuffers[0]; //Get the blob array as a wrapped byte buffer     
+		((Buffer)aBuf).limit(aBuf.capacity());
+		((Buffer)aBuf).position(writeToPos);   
+		((Buffer)aBuf).limit(Math.min(aBuf.capacity(), endPos ));
+		
+		ByteBuffer bBuf = output.wrappedDirectWritingBuffers[1]; //Get the blob array as a wrapped byte buffer     
+		((Buffer)bBuf).position(0);   
+		((Buffer)bBuf).limit(endPos>output.sizeOfBlobRing ? output.blobMask & endPos: 0);
+		
+		return output.wrappedDirectWritingBuffers;
 	}
  
 	/**
@@ -2788,6 +2894,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	}
 	
 	public static void copyBytesFromInputStreamToRing(InputStream source, byte[] target, int targetloc, int targetMask, int length) {
+		assert(length<=targetMask);
 		try {			
 			if (length > 0) {
 				final int tStart = targetloc & targetMask;
@@ -2804,7 +2911,28 @@ public class Pipe<T extends MessageSchema<T>> {
 			}
 		} catch (IOException ioex) {
 			throw new RuntimeException(ioex);
-		}
+		}	
+	}
+	
+	
+	public static void copyBytesFromByteBufferToRing(ByteBuffer source, byte[] target, int targetloc, int targetMask, int length) {
+		assert(length<=targetMask);
+		assert(length<=source.remaining());
+					
+			if (length > 0) {
+				final int tStart = targetloc & targetMask;
+				final int tStop = (targetloc + length) & targetMask;
+				if (tStop > tStart) {
+					//the source and target do not wrap
+					source.get(target, tStart, length);
+				} else {
+					//the source does not wrap but the target does
+					// done as two copies
+					source.get(target, tStart, length-tStop);
+					source.get(target, 0,      tStop);
+				}
+			}
+		
 	}
 	
 	/**
@@ -4459,23 +4587,10 @@ public class Pipe<T extends MessageSchema<T>> {
     //needed by socket writers
     public static <S extends MessageSchema<S>> int publishWritesDirect(Pipe<S> pipe) {       	
     	
-    	//init if it is used
+    	//init if it is needed
     	if (null==pipe.directBlob) {
-    		pipe.directBlob = ByteBuffer.allocateDirect(pipe.sizeOfBlobRing);
-    		((Buffer)pipe.directBlob).limit(pipe.directBlob.capacity());
-    		
-    		pipe.directBlobReaderA = pipe.directBlob.asReadOnlyBuffer();
-    		if (!pipe.directBlobReaderA.isDirect()) {
-    			throw new UnsupportedOperationException();
-    		}
-
-    		pipe.directBlobReaderB = pipe.directBlob.asReadOnlyBuffer();
-    		if (!pipe.directBlobReaderB.isDirect()) {
-    			throw new UnsupportedOperationException();
-    		}
-    		    
-    		pipe.wrappedReadingDirectBuffers = new ByteBuffer[] {pipe.directBlobReaderA, pipe.directBlobReaderB};
-    	}
+			initDirectBuffer(pipe);
+		}
     	
     	//pipe.blobWriteLastConsumedPos -- start from here    	
     	//pipe.blobRingHead.byteWorkingHeadPos.value --- limit
@@ -4510,6 +4625,33 @@ public class Pipe<T extends MessageSchema<T>> {
 		
 		return consumed;
     }
+
+    //called on direct replication for consume internally but it is also
+    //TODO: called when required for writes
+	public static <S extends MessageSchema<S>> void initDirectBuffer(Pipe<S> pipe) {
+		
+    		pipe.directBlob = ByteBuffer.allocateDirect(pipe.sizeOfBlobRing);
+    		((Buffer)pipe.directBlob).limit(pipe.directBlob.capacity());
+    		
+    		pipe.directBlobReaderA = pipe.directBlob.duplicate();
+    		if (!pipe.directBlobReaderA.isDirect()) {
+    			throw new UnsupportedOperationException();
+    		}
+    		if (!(pipe.directBlobReaderA instanceof sun.nio.ch.DirectBuffer)) {
+    			throw new UnsupportedOperationException();
+    		}
+
+    		pipe.directBlobReaderB = pipe.directBlob.duplicate();
+    		if (!pipe.directBlobReaderB.isDirect()) {
+    			throw new UnsupportedOperationException();
+    		}
+    		if (!(pipe.directBlobReaderB instanceof sun.nio.ch.DirectBuffer)) {
+    			throw new UnsupportedOperationException();
+    		}
+    		
+    		pipe.wrappedReadingDirectBuffers = new ByteBuffer[] {pipe.directBlobReaderA, pipe.directBlobReaderB};
+    	
+	}
     
     /**
      * Records the count of bytes consumed by this fragment into the pipe. This is part of the internal
@@ -5000,6 +5142,12 @@ public class Pipe<T extends MessageSchema<T>> {
 	public static <S extends MessageSchema<S>> DataInputBlobReader<S> openInputStream(Pipe<S> pipe) {
 		pipe.blobReader.openLowLevelAPIField();
 		return pipe.blobReader;
+	}
+	
+	//new APIs should be named ChannelReader, and deprecate the old ones
+	public static ChannelReaderSimple openChannelReaderSimple(Pipe<?> pipe) {		
+		pipe.blobDirectReader.openLowLevelAPIField();
+		return pipe.blobDirectReader;
 	}
 	
 	/**

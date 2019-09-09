@@ -42,8 +42,20 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			return new ServerSocketBulkReaderStage(graphManager, output, coordinator);
 		}
 	
+		//static AtomicBoolean b = new AtomicBoolean(true);
+		
 		protected ServerSocketBulkReaderStage(GraphManager graphManager, Pipe<SocketDataSchema>[] output, ServerCoordinator coordinator) {
 			super(graphManager, NONE, output);
+			
+//			if (b.get()) {
+//			int i = 1;//output.length;
+//			while(--i>=0) {
+//				logger.info("begin move off heap "+i);
+//				output[i].moveBlobOffHeap();
+//				logger.info("finish move off heap "+i);
+//			}
+//				b.set(false);
+//			}
 			
 			 this.dataReader = new ServerSocketBulkReaderStageDataReader(coordinator, new Consumer<SelectionKey>(){
 					@Override
@@ -54,6 +66,8 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 					}
 		    });
 	        
+	
+			 
 	        this.label = "\n"+coordinator.host()+":"+coordinator.port()+"\n";
 	        
 	        this.output = output;
@@ -67,7 +81,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        
 	        Number dsr = graphManager.defaultScheduleRate();
 	        if (dsr!=null) {
-	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/2, this);
+	        	GraphManager.addNota(graphManager, GraphManager.SCHEDULE_RATE, dsr.longValue()/6, this);
 	        }
 	               
 			//        //If server socket reader does not catch the data it may be lost
@@ -152,7 +166,7 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 
 	    @Override
 	    public void run() {
-	 
+	
 	    	 if(!shutdownInProgress) {
 	 	        	
 	    	   		///////////////////
@@ -346,8 +360,6 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	        }
 	    }
 
-	    private int r1; //needed by assert
-	    private int r2; //needed by assert
 	    private int readSize = -2;
 	    private long totalRead = 0;
 	    
@@ -373,33 +385,41 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 
 	                //NOTE: the byte buffer is no longer than the valid maximum length but may be shorter based on end of wrap around
 					int wrkHeadPos = Pipe.storeBlobWorkingHeadPosition(outputPipe);
-					targetBuffer = Pipe.wrappedWritingBuffers(wrkHeadPos, outputPipe, readMaxSize);
-	                       
-	                assert(that.collectRemainingCount(targetBuffer));
-	  
+					
+					targetBuffer =
+							//Pipe.wrappedWritingBuffers(wrkHeadPos, outputPipe, readMaxSize);
+							Pipe.wrappedWritingDirectBuffers(wrkHeadPos, outputPipe, readMaxSize);
+	                					
+					
 	                //read as much as we can, one read is often not enough for high volume
 	                boolean isStreaming = false; //TODO: expose this switch..
 	                
 	                do {
 	                	//System.out.println("rec buffer: "+that.readSize	+"  "+ 	targetBuffer[0].remaining()+" "+targetBuffer[1].remaining());
 	                	
-	                	temp = sourceChannel.read(targetBuffer);//TODO: shoudl be direct??
+	                	
+	                	//TODO: should be direct?? can we use unsafe to create off heap targets?
+	                	
+	                	temp = sourceChannel.read(targetBuffer, 0, targetBuffer.length);
+	                	
+	                	
+	          //      	temp = sourceChannel.read(tempBuf);
+	                	
+	                	
+	                	
+	          //      	tempBuf.get(dst);
+	                	
+	                	
 	                	if (temp>0){
 	                		len+=temp;
 	                	}
 	                	that.totalRead += len;
 	                	//System.out.println("done read "+len+" total "+that.totalRead);
 	                } while (temp>0 && isStreaming); //for multiple in flight pipelined must keep reading...
-	                
-	           
-	                
-	                //784 needed for 16,  49 byes per request
-	                //System.out.println(len); ServerSocketReaderStage.showRequests=true;
+	
 	                     
-	                //NOTE: not much help///  attemptSetTcpQuickAckLocal(that, sourceChannel);	
+	                //NOTE: not much help, test later///  attemptSetTcpQuickAckLocal(that, sourceChannel);	
 	        
-	                
-	                assert(that.readCountMatchesLength(len, targetBuffer));
 	                
 //	                if (temp<=0) {
 //	                	doneSelectors.add(selection);
@@ -497,18 +517,6 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 			return result;
 		}
 
-		private boolean collectRemainingCount(ByteBuffer[] b) {
-			r1 = b[0].remaining();
-			r2 = b[1].remaining();
-			return true;
-		}
-
-		private final boolean readCountMatchesLength(long len, ByteBuffer[] b) {
-			int readCount = (r1-b[0].remaining())+(r2-b[1].remaining());
-			assert(readCount == len) : "server "+readCount+" vs "+len;
-			return true;
-		}
-
 		private int abandonConnection(long channelId, Pipe<SocketDataSchema> targetPipe, boolean isOpen) {
 			//logger.info("{} abandon one record, did not publish because length was {}    {}",System.currentTimeMillis(), len,targetPipe);
 
@@ -529,10 +537,10 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 				if (unstoreBlobWorkingHeadPosition<0) {
 					new Exception("Internal error, called unstore too many times, no data but len is: "+len).printStackTrace();
 				}
+
 				len = publishSingleMessage(target,
 						             channelId, 
 						             unstoreBlobWorkingHeadPosition, len);     
-				
 				
 			} else {
 				Pipe.publishEOF(target);

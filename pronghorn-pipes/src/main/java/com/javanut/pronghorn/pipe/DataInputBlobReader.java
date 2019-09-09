@@ -185,7 +185,7 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 		return false;
 	}
 	
-    
+    @Override
     public int openLowLevelAPIField() {
         int meta = Pipe.takeByteArrayMetaData(this.pipe);
         
@@ -685,14 +685,7 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
     public static <S extends MessageSchema<S>> int read(DataInputBlobReader<S> reader, byte[] b, int off, int len, int mask) {
     	assert(null!=reader.backing);
     	assert(null!=b);
-    	
-    	if (null==reader.backing) {
-    		throw new NullPointerException("hack test");
-    	}
-    	if (null==b) {
-    		throw new NullPointerException("hack test");
-    	}
-    	
+    	    	
         int max = bytesRemaining(reader);
         if (len > max) {
             len = max;
