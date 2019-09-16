@@ -6,8 +6,6 @@ import org.slf4j.LoggerFactory;
 import com.javanut.pronghorn.network.schema.HTTPRequestSchema;
 import com.javanut.pronghorn.network.schema.NetPayloadSchema;
 import com.javanut.pronghorn.network.schema.ReleaseSchema;
-import com.javanut.pronghorn.network.schema.ServerConnectionSchema;
-import com.javanut.pronghorn.network.schema.ServerResponseSchema;
 import com.javanut.pronghorn.pipe.PipeConfig;
 import com.javanut.pronghorn.pipe.PipeConfigManager;
 
@@ -42,8 +40,7 @@ public class ServerPipesConfig {
 							 int concurrentChannelsPerEncryptUnit,
 							 int decryptUnitsPerTrack,
 							 int concurrentChannelsPerDecryptUnit, 
-							 int partialPartsIn,  //make larger for many fragments
-							 int totalMemoryInInputBuffer, //full buffer from socket to parser
+							 int partialPartsIn,  //make larger for many fragments					
 							 int maxRequestSize, //make larger for large posts
 							 int maxResponseSize,
 							 int queueLengthIn, //router to modules
@@ -125,14 +122,12 @@ public class ServerPipesConfig {
 				
 		pcmIn.ensureSize(ReleaseSchema.class,  releaseMsg, 0);
 		pcmOut.ensureSize(ReleaseSchema.class,  releaseMsg, 0);
-
-		int blockSize = totalMemoryInInputBuffer/partialPartsIn;
+		
+		
+		//TODO: this must be bigger for raw test but every time we make it bigger it crashes..
 		pcmIn.ensureSize(NetPayloadSchema.class, partialPartsIn, 
-				Math.max(maxRequestSize, 
-						 isTLS ? (Math.max(blockSize, SSLUtil.MinTLSBlock)) : blockSize				
-						)
+						 isTLS ? (Math.max(maxRequestSize, SSLUtil.MinTLSBlock)) : maxRequestSize
 				);
-			
 		
 		pcmIn.ensureSize(HTTPRequestSchema.class, queueLengthIn, fromRouterToModuleBlob);
 		

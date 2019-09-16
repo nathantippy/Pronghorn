@@ -264,7 +264,7 @@ public class PipeMonitorCollectorStage extends PronghornStage {
 		PipeMonitorCollectorStage stage = new PipeMonitorCollectorStage(gm, GraphManager.attachMonitorsToGraph(gm, monitorRate, ringBufferMonitorConfig));
         
 		//this one must go faster to ensure all the messages get consumed
-		GraphManager.addNota(gm, GraphManager.SCHEDULE_RATE, Math.max(monitorRate>>3, 8_000), stage);
+		GraphManager.addNota(gm, GraphManager.SCHEDULE_RATE, Math.max(monitorRate>>2, 8_000), stage);
 		stage.setNotaFlag(PronghornStage.FLAG_MONITOR);
 		return stage;
 	}

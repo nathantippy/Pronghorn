@@ -645,6 +645,7 @@ public class NetGraphBuilder {
 		int tracks = (int)gt&Integer.MAX_VALUE; //tracks is count of HTTP1xRouters
 		int pipes = in[0].length/tracks; //is count of pipes together going to each parser
 		
+		int partsPerPipe = 4;//TODO: must be computed from the number of requests etc...
 		
 		boolean orig = false;//tracks<=1;
 		
@@ -670,7 +671,7 @@ public class NetGraphBuilder {
 					
 				localPipe = Pipe.buildPipes(routers, 
 						SocketDataSchema.instance.newPipeConfig(
-								pipes,
+								pipes*partsPerPipe,
 								varLen
 								)
 						);
@@ -1022,7 +1023,7 @@ public class NetGraphBuilder {
 						r.getDecryptionUnitsPerTrack(),
 						r.getConcurrentChannelsPerDecryptUnit(),				
 						//one message might be broken into this many parts
-						fromSocketBlocks, fromSocketBuffer,
+						fromSocketBlocks, 
 						r.getMaxRequestSize(),
 						r.getMaxResponseSize(),
 						2, //incoming telemetry requests in Queue, keep small

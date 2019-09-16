@@ -1227,14 +1227,16 @@ public class Pipe<T extends MessageSchema<T>> {
 	private void buildBuffers() {
 
 		try {
-			
-			//only create if we have not already created an off heap edition
-			if (this.blobRing==null || this.blobRing.length!=sizeOfBlobRing) {
-				if (this.blobRing!=null) {
-					log.info("new blobRing created to replace old one due to length change.");
+			//if (null == wrappedDirectWritingBuffers) {
+				//only create if we have not already created an off heap edition
+				if (this.blobRing==null || this.blobRing.length!=sizeOfBlobRing) {
+					if (this.blobRing!=null) {
+						log.info("new blobRing created to replace old one due to length change.");
+					}
+					this.blobRing = new byte[sizeOfBlobRing];
 				}
-				this.blobRing = new byte[sizeOfBlobRing];
-			}
+			//}
+			
 			this.slabRing = new int[sizeOfSlabRing];
 			
 		    this.pendingReleases = 
@@ -1322,7 +1324,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	    //Due to the fact that no locks are used it becomes necessary to check
 	    //every single field to ensure the full initialization of the object
 	    //this is done as part of graph set up and as such is called rarely.
-		return null!=pipe.blobRing &&
+		return (null!=pipe.blobRing || null!=pipe.wrappedDirectWritingBuffers) &&
 			   null!=pipe.slabRing &&
 			   null!=pipe.blobRingLookup &&
 			   null!=pipe.wrappedSlabRing &&
@@ -1928,21 +1930,7 @@ public class Pipe<T extends MessageSchema<T>> {
 	public static <S extends MessageSchema<S>> ByteBuffer[] wrappedWritingDirectBuffers(int originalBlobPosition,
 				Pipe<S> output, int maxLen) {
 
-		if (null == output.wrappedDirectWritingBuffers) {
-			//In this case we are writing directly to the byte buffer and we must release the old blob
-			//TODO: we may find a way to avoid creation of it later
-			output.blobRing = null;
-			
-			if (null == output.directBlob) {
-				initDirectBuffer(output);
-			}
-			
-        	ByteBuffer directA = output.directBlob.duplicate();
-        	ByteBuffer directb = output.directBlob.duplicate();	        
-        	
-        	output.wrappedDirectWritingBuffers = new ByteBuffer[]{directA,directb};
-			
-		}
+		setupDirectBufferWriting(output);
 		
 		assert(maxLen>=0);
 		
@@ -1959,6 +1947,23 @@ public class Pipe<T extends MessageSchema<T>> {
 		((Buffer)bBuf).limit(endPos>output.sizeOfBlobRing ? output.blobMask & endPos: 0);
 		
 		return output.wrappedDirectWritingBuffers;
+	}
+
+	public static void setupDirectBufferWriting(Pipe<?> output) {
+		if (null == output.wrappedDirectWritingBuffers) {
+	
+			output.blobRing = null;
+			
+			if (null == output.directBlob) {
+				initDirectBuffer(output);
+			}
+			
+        	ByteBuffer directA = output.directBlob.duplicate();
+        	ByteBuffer directb = output.directBlob.duplicate();	        
+        	
+        	output.wrappedDirectWritingBuffers = new ByteBuffer[]{directA,directb};
+			
+		}
 	}
  
 	/**

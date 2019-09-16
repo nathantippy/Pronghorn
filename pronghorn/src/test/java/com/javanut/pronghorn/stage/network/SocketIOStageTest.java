@@ -323,8 +323,7 @@ public class SocketIOStageTest {
 						1,
 						1,				
 						//one message might be broken into this many parts
-						fromSocketBlocks, 
-						fromSocketBuffer,
+						fromSocketBlocks,
 						maxRequestSize,
 						maxResponseSize,
 						2, //requests in Queue, keep small

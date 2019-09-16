@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import com.javanut.pronghorn.network.config.HTTPHeader;
 import com.javanut.pronghorn.network.schema.HTTPRequestSchema;
 import com.javanut.pronghorn.network.schema.ServerResponseSchema;
-import com.javanut.pronghorn.pipe.PipeConfig;
 import com.javanut.pronghorn.pipe.PipeConfigManager;
 import com.javanut.pronghorn.struct.StructRegistry;
 
@@ -59,7 +58,6 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 	private int maxQueueOut = 8; //from orderSuper to ChannelWriter
 	
 	private int socketToParserBlocks = 128;//from bulkRouter to http1x router
-	private int minMemoryInputPipe = 1<<10; //1Kminum input pipe.
 	
 	public final PipeConfigManager pcmIn;
 	public final PipeConfigManager pcmOut;
@@ -245,16 +243,6 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 		this.concurrentChannelsPerDecryptUnit = value;
 		return this;
 	}
-
-	@Override
-	public HTTPServerConfig setMinimumInputPipeMemory(int bytes) {
-		this.minMemoryInputPipe = Math.max(bytes, this.minMemoryInputPipe);
-		return this;
-	}
-	
-	public int getMinimumInputPipeMemory() {
-		return this.minMemoryInputPipe;
-	}
 	
 	@Override
 	public HTTPServerConfig setMaxQueueIn(int maxQueueIn) {
@@ -299,7 +287,7 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 				getDecryptionUnitsPerTrack(),
 				getConcurrentChannelsPerDecryptUnit(),				
 				//one message might be broken into this many parts
-				blocksFromSocket, minMemoryInputPipe,
+				blocksFromSocket, 
 				getMaxRequestSize(),
 				getMaxResponseSize(),
 				queueIn,
@@ -415,5 +403,8 @@ public class HTTPServerConfigImpl implements HTTPServerConfig {
 		return socketToParserBlocks;
 	}
 
+	public void setSocketToParserBlocks(int blocks) {
+		socketToParserBlocks = blocks;
+	}
 		
 }
