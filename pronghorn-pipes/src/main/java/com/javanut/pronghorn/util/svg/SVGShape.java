@@ -100,9 +100,14 @@ public class SVGShape {
 		width.writeTo(target.append(" stroke-width='")).append("'");
 		return this;
 	}
-	
-	
-	
+
+	public int boundX(int x) {
+		return Math.max(image.limitLeft, Math.min(image.limitRight, x));
+	}
+
+	public int boundY(int y) {
+		return Math.max(image.limitBottom, Math.min(image.limitTop, y));
+	}
 	
 	
 }

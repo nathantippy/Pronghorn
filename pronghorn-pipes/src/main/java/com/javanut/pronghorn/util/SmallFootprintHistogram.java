@@ -3,8 +3,6 @@ package com.javanut.pronghorn.util;
 import java.io.IOException;
 import java.util.Arrays;
 
-import com.javanut.pronghorn.util.Appendables;
-
 public class SmallFootprintHistogram {
 
 	private final int[] buckets = new int[64]; 
@@ -47,14 +45,45 @@ public class SmallFootprintHistogram {
 		return target;
 	}
 	
-	public static void record(SmallFootprintHistogram that, long valueNS) {
+	public static void raiseFloor(SmallFootprintHistogram that, double pct) {
+		
+		assert(pct<1);
+		assert(pct>0);
+		
+		long maxBucketCount = 0;
+		
+		int x = that.buckets.length;
+		while (--x>=0) {
+			maxBucketCount = Math.max(maxBucketCount, that.buckets[x]);
+		}
+		
+		long newFloor = (long) (maxBucketCount*pct);
+		long newMaxValue = 0;
+		
+		int values = 0;
+		x = that.buckets.length;
+		while (--x>=0) {
+			if (that.buckets[x]<newFloor) {
+				that.totalCount-=that.buckets[x];
+				that.buckets[x] = 0;
+				that.sums[x] = 0;	
+			} else {
+				newMaxValue = Math.max(newMaxValue, that.maxValue);
+				values++;
+			}
+		}
+		System.out.println("buckets after filter:"+values);
+		
+	}
+	
+	public static void record(SmallFootprintHistogram that, long value) {
 
-		int base = 64 - Long.numberOfLeadingZeros(valueNS);
+		int base = 64 - Long.numberOfLeadingZeros(value);
 		that.buckets[base]++;
-		that.sums[base]+=valueNS;
+		that.sums[base]+=value;
 	
 		that.totalCount++;
-		that.maxValue = Math.max(that.maxValue, valueNS);
+		that.maxValue = Math.max(that.maxValue, value);
 	}
 	
 	public static long elapsedAtPercentile(SmallFootprintHistogram that, double pct) {

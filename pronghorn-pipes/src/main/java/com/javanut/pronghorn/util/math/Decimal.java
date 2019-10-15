@@ -9,17 +9,36 @@ public class Decimal {
 		} else if (aE>bE){
 			int dif = (aE-bE);		
 			//if dif is > 18 then we will loose the data anyway..  
-			long temp =	dif>=longPow.length? 0 : aM*longPow[dif];
-			result.result(bM + temp, bE);
+			result.result(bM + (dif>=longPow.length? 0 : aM*longPow[dif]), bE);
 		} else {
 			int dif = (bE-aE);						
-			long temp =	dif>=longPow.length? 0 : bM*longPow[dif];
-			result.result(aM+temp, aE);
+			result.result(aM+(dif>=longPow.length? 0 : bM*longPow[dif]), aE);
 		}
     }
     
-    public static void multiply(final long aM, final byte aE, final long bM, final byte bE, DecimalResult result) {
-        	result.result(aM*bM, (byte)(aE+bE));
+    public static void multiply( long aM,  byte aE,  long bM,  byte bE, DecimalResult result) {
+    	while (Math.abs(aE+bE)>=18) {    		
+    		if (aE<0 && aE<bE) {    		
+	    		aE += 3;
+	    		aM /=1000;
+    		} else if (bE<0 && bE<aE) {    		
+	    		bE += 3;
+	    		bM /=1000;
+    		} else if (aE>0 && aE>bE) {    		
+	    		aE -= 3;
+	    		aM *=1000;
+    		} else if (bE>0 && bE>aE) {    		
+	    		bE -= 3;
+	    		bM *=1000;
+    		}
+    	}
+    	
+        result.result(aM*bM, (byte)(aE+bE));
+    }
+    
+    public static void divide( long aM,  byte aE, long bM,  byte bE, DecimalResult result) {
+    	
+    	result.result(aM/bM, (byte)(aE-bE));
     }
     
     
@@ -31,16 +50,22 @@ public class Decimal {
 
 	public static void fromRational(long numerator, long denominator, DecimalResult result) {
 		
-		long ones = numerator/denominator;
-		long rem  = numerator%denominator;
-		
-		//based on ones how much room do we have?
-		//10 bits is 1024
-		final int ks = Long.numberOfLeadingZeros(Math.abs(ones))/10;
+		final long ones = numerator/denominator;
+		final long rem  = numerator%denominator;
 
+		//based on ones how much room do we have?
+		//10 bits is 1024 so we divide by 10
+		int ks = Long.numberOfLeadingZeros(Math.abs(ones))/10;
+				
 		long mul    = multLookup[ks];
-		long value = (ones*mul)+((rem*mul)/denominator);
-	
+		long value = (ones*mul)+((rem*mul)/denominator);		
+				
+		//reduce zeros if we need to
+		while (ks>0 && ((value%1000) == 0)) {
+			value = value/1000;
+			ks--;
+		}
+		
 		result.result(value, placesLookup[ks]);		
 	}
     

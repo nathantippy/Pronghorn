@@ -194,7 +194,7 @@ public class PMath {
      * @param i
      * @return
      */
-    private static int primeAtIdx(int i) {
+    public static int primeAtIdx(int i) {
 
         int[] localPrimes = primes;
         while (i>=localPrimes.length) {
@@ -207,12 +207,13 @@ public class PMath {
             int[] newPrimes = new int[primes.length+1];
             System.arraycopy(primes, 0, newPrimes, 0, primes.length);
             newPrimes[primes.length]=v;
-            localPrimes = primes = newPrimes;
+            
+            primes = localPrimes = newPrimes;
             
         } 
         
         //return the value
-        return primes[i];
+        return localPrimes[i];
     }
     
     /**
@@ -227,6 +228,21 @@ public class PMath {
     	}
     	return p;
     }
+    
+    /**
+     * Next prime above the given value which need not be prime.
+     * @param startValue
+     * @return first prime discovered at or above start value
+     */
+    public static int nextPrimeIndex(int startValue) {
+    	int i = 0;
+    	while ((primeAtIdx(i++))<startValue) {
+    	}
+    	return i-1;
+    }
+    
+    
+    
 
     /**
      * Not a general method, this only works for up to numbers 1 larger than the last prime discovered.

@@ -14,7 +14,7 @@ public class SVGPoints {
 	}
 		
 	public SVGPoints point(int x, int y) {
-		Appendables.appendValue(Appendables.appendValue(target, x).append(","),y).append(" ");
+		Appendables.appendValue(Appendables.appendValue(target, shape.boundX(x)).append(","),shape.boundY(y)).append(" ");
 		return this;
 	}
 	

@@ -78,23 +78,34 @@ public class PipeMonitorStage extends PronghornStage {
 
 	private final static int SAMP_SIZE = Pipe.sizeOf(PipeMonitorSchema.instance, MSG_RINGSTATSAMPLE_100);
 	
+	private long lastHead = -2;
+	private long lastTail = -1;
+	
 	private void monitorSinglePipe(Pipe<PipeMonitorSchema> output, Pipe<?> localObserved) {
 
 		//if we can't write then do it again on the next cycle, and skip this data point.
 		
 		if (Pipe.hasRoomForWrite(output,SAMP_SIZE)) {
 									
-			final int size = Pipe.addMsgIdx(output, MSG_RINGSTATSAMPLE_100);
+			long headPosition = Pipe.headPosition(localObserved);
+			long tailPosition = Pipe.tailPosition(localObserved);
+			
+			if (headPosition!=lastHead || tailPosition!=lastTail) {
+			
+				final int size = Pipe.addMsgIdx(output, MSG_RINGSTATSAMPLE_100);
+		
+				Pipe.addLongValue(System.currentTimeMillis(), output);
+				Pipe.addLongValue(lastHead = headPosition, output);
+				Pipe.addLongValue(lastTail = tailPosition, output);
+				Pipe.addIntValue(localObserved.lastMsgIdx, output);
+				Pipe.addIntValue(localObserved.sizeOfSlabRing, output);
+				Pipe.addLongValue(Pipe.totalWrittenFragments(localObserved), output);
 	
-			Pipe.addLongValue(System.currentTimeMillis(), output);
-			Pipe.addLongValue(Pipe.headPosition(localObserved), output);
-			Pipe.addLongValue(Pipe.tailPosition(localObserved), output);
-			Pipe.addIntValue(localObserved.lastMsgIdx, output);
-			Pipe.addIntValue(localObserved.sizeOfSlabRing, output);
-			Pipe.addLongValue(Pipe.totalWrittenFragments(localObserved), output);
-
-			Pipe.confirmLowLevelWrite(output, size);
-			Pipe.publishWrites(output);
+				Pipe.confirmLowLevelWrite(output, size);
+				Pipe.publishWrites(output);
+			
+			}
+			
 						
 		} else {
 			

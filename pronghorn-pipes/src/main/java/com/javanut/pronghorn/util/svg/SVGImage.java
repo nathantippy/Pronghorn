@@ -14,13 +14,24 @@ public final class SVGImage {
 	private final SVGDefs defs;
 	private final SVGGraphicsElement graphicsElement;
 	
-	public SVGImage(AppendableProxy target) {
+	public final int limitLeft; 
+	public final int limitRight; 
+	public final int limitTop;
+	public final int limitBottom;
+	
+	SVGImage(AppendableProxy target, int limitLeft, int limitRight, int limitBottom, int limitTop) {
 		this.target = target;
 		this.defs = new SVGDefs(target, this);
 		this.text = new SVGText(target, this);
 		this.shape = new SVGShape(target, this);
 		this.points = new SVGPoints(target, shape);
 		this.graphicsElement = new SVGGraphicsElement(target, this);
+		
+		this.limitLeft = limitLeft;
+		this.limitRight = limitRight;
+		this.limitTop = limitTop;
+		this.limitBottom = limitBottom;
+		
 	}
 	
 	public SVGImage desc(String desc) {
@@ -132,7 +143,7 @@ public final class SVGImage {
 		Appendables.appendValue(target.append(" "),y);
 		Appendables.appendValue(Appendables.appendValue(target.append(" "),w)," ",h,"\">\n");
 	
-		return new SVGImage(target);
+		return new SVGImage(target, x, x+w, y, y+h);
 	}
 
 	//g stack..
