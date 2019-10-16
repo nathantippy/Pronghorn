@@ -4,7 +4,7 @@
 
 	<groupId>com.javanut.logtelemetry</groupId>
 	<artifactId>log-telemetry</artifactId>
-	<version>1.1.12</version>
+	<version>1.1.13</version>
 	<description>load telemetry from log file as a telemetry server for easy viewing.</description>
 
 	<properties>
