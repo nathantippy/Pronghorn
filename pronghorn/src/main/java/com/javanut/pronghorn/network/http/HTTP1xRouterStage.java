@@ -376,7 +376,7 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
     }
 
 
-	private boolean processGroup(boolean hasRoomToWrite, int g, final int version, int start, int limit) {
+	private boolean processGroup(boolean hasRoomToWrite, int g, final int version, final int start, final int limit) {
 		boolean done = true;
 			for(int idx = start; idx<limit; idx++) {
 		
@@ -452,36 +452,43 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
     
     private static int parsePipe(final HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
 		//we can accumulate above but we can not parse or continue until this pipe is clear    
-	   	if (null == that.blockedOnOutput[idx]) {	    	  
-	        return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 0;
+	   	if (null == that.blockedOnOutput[idx]) {	  
+	        return ((that.inputChannels[idx]) >= 0) ? parseAvail(that, idx) : 0;
     	} else {
-    		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
-				that.blockedOnOutput[idx] = null;
-				return ((that.inputChannels[idx]) >= 0) ? that.parseAvail(idx) : 1;
-			} else {
-				return -1;
-			}
+    		return parsePipe2(that, idx);
     	}
 	}
 
 
-	private int parseAvail(final int idx) {
+	private static int parsePipe2(final HTTP1xRouterStage<?, ?, ?, ?> that, final int idx) {
+		if (Pipe.hasRoomForWrite(that.blockedOnOutput[idx])) {
+			that.blockedOnOutput[idx] = null;
+		
+			return ((that.inputChannels[idx]) >= 0) ? parseAvail(that, idx) : 1;
+		} else {
+			
+			return -1;
+		}
+	}
+
+
+	private static int parseAvail(final HTTP1xRouterStage that, final int idx) {
 		
 		
-		final long channel = inputChannels[idx];
+		final long channel = that.inputChannels[idx];
 				
-        if (null != log && !Pipe.hasRoomForWrite(log)) {
+        if (null != that.log && !Pipe.hasRoomForWrite(that.log)) {
         	return -1;//try later after log pipe is cleared
         }
         
-		boolean webSocketUpgraded = ServerCoordinator.isWebSocketUpgraded(coordinator, channel);
+		boolean webSocketUpgraded = ServerCoordinator.isWebSocketUpgraded(that.coordinator, channel);
 		if (!webSocketUpgraded) {			
-			return parseHTTPAvail(this, idx, channel);
+			return parseHTTPAvail(that, idx, channel);
 		} else {
-			Pipe<NetPayloadSchema> selectedInput = inputs[idx];
-			final int totalAvail = inputLengths[idx];
-            final int pipeIdx = ServerCoordinator.getWebSocketPipeIdx(coordinator, channel);
-            final Pipe<HTTPRequestSchema> outputPipe = outputs[pipeIdx];
+			Pipe<NetPayloadSchema> selectedInput = that.inputs[idx];
+			final int totalAvail = that.inputLengths[idx];
+            final int pipeIdx = ServerCoordinator.getWebSocketPipeIdx(that.coordinator, channel);
+            final Pipe<HTTPRequestSchema> outputPipe = that.outputs[pipeIdx];
             if (!Pipe.hasRoomForWrite(outputPipe) ) {
              	return -1;//exit to take a break while pipe is full.
             }
@@ -491,7 +498,7 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
           
             if (totalAvail >= 2) {
             
-	            int pos = inputBlobPos[idx];
+	            int pos = that.inputBlobPos[idx];
 	            
 	            int finOpp = backing[mask & pos++];
 	            int b2 = backing[mask & pos++];
@@ -529,7 +536,7 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 	            	//we have data and we have room
 	            	///////////////////
 	            	
-	            	return commitWrite(idx, selectedInput, channel, totalAvail,
+	            	return commitWrite(that, idx, selectedInput, channel, totalAvail,
 	            			outputPipe, backing, mask, pos, finOpp,
 	            			headerSize, msk, length) ? 1 :0;
 	            } else {       
@@ -547,12 +554,12 @@ public class HTTP1xRouterStage<T extends Enum<T> & HTTPContentType,
 	}
 
 
-	private boolean commitWrite(final int idx, Pipe<NetPayloadSchema> selectedInput, final long channel,
+	private static boolean commitWrite(final HTTP1xRouterStage that, final int idx, Pipe<NetPayloadSchema> selectedInput, final long channel,
 			final int totalAvail, final Pipe<HTTPRequestSchema> outputPipe, final byte[] backing, final int mask,
 			int pos, int finOpp, int headerSize, int msk, long length) {
 		int size = Pipe.addMsgIdx(outputPipe, HTTPRequestSchema.MSG_WEBSOCKETFRAME_100 );
 		Pipe.addLongValue(channel, outputPipe);
-		Pipe.addIntValue(sequences[idx], outputPipe);
+		Pipe.addIntValue(that.sequences[idx], outputPipe);
 		Pipe.addIntValue(finOpp, outputPipe);
 
 		assert(length<=Integer.MAX_VALUE);
