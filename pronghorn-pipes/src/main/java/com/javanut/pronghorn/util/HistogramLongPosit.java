@@ -1,14 +1,18 @@
 package com.javanut.pronghorn.util;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.text.DecimalFormat;
 import java.util.stream.IntStream;
+
+import com.javanut.pronghorn.util.ma.RunningStdDev;
+import com.javanut.pronghorn.util.math.LongMath;
 
 public class HistogramLongPosit {
 
 	private final int maxDetailsBits; //smaller buckets can find better peak, is there a better way?
+	private final int minBits;
 	
-	private final int[][] buckets = new int[64][];
+	private final int[][] buckets = new int[64][];   //TODO: these arrays of ints ?? replace with Lois design
 	private final long[][] sums   = new long[64][]; 
 		
 	private long totalCount;
@@ -16,21 +20,23 @@ public class HistogramLongPosit {
 	
 	public HistogramLongPosit() {
 		this.maxDetailsBits = 22;
+		this.minBits = 5;
 	}
 	
-	public HistogramLongPosit(int maxDetailsBits) {
+	public HistogramLongPosit(int maxDetailsBits, int minBits) {
 		this.maxDetailsBits = maxDetailsBits;
+		this.minBits = minBits;//how many values are totaled together at the smallest value
 	}
 	
 	public String toString() {
-		return report(new StringBuilder()).toString();
+		return report(new StringBuilder(), 1d).toString();
 	}
 	
 	public static long totalCount(HistogramLongPosit that) {
-		return that.totalCount;
+		return null==that?0:that.totalCount;
 	}
 	
-	public <A extends Appendable> A report(A target) {
+	public <A extends Appendable> A report(A target, double div) {
 		try {
 			Appendables.appendValue(target.append("Total:"), totalCount).append("\n");
 			Appendables.appendValue(target, HistogramLongPosit.elapsedAtPercentile(this, .25f)).append(" 25 percentile\n");
@@ -49,17 +55,15 @@ public class HistogramLongPosit {
 			for(int b = 0; b<64; b++) {
 				int len = null==this.buckets[b] ? 0 : this.buckets[b].length;
 				if (len>0) {
-					System.out.println("bucket "+b+" floor "+(1L<<(Math.max(0, b-1)))+" array len "
+					long floor = 1L<<(Math.max(0, b-1));
+					System.out.println("bucket "+b+" floor "+floor+" array len "
 				           + len
 				           + " sum "
 							+ (null==this.buckets[b] ? 0 : IntStream.of(this.buckets[b]).sum()  )
 						   + " max "
 							+ (null==this.buckets[b] ? 0 : IntStream.of(this.buckets[b]).max()  )
-							);
-					
-					
-					
-					
+							+ adjFloor(floor, div)
+							);					
 				}
 				
 			}
@@ -71,88 +75,251 @@ public class HistogramLongPosit {
 		return target;
 	}
 	
-	//TODO: auto combine until we see a peak. method on histogram
+	private String adjFloor(long floor, double div) {
+		if (div<=1) {			
+			return "";
+		} else {
+			DecimalFormat df = new DecimalFormat("#.##########");
+			return " actual: "+ df.format(floor/div);
+		}
+		
+	}
+
+	public RunningStdDev stdDevBucket() {
+		
+		RunningStdDev sd = new RunningStdDev();
+		for(int b = 0; b<64; b++) {
+			if (null!=buckets && null!=buckets[b]) {
+				IntStream.of(buckets[b]).forEach(i->{
+					RunningStdDev.sample(sd, i);		
+				});
+			}
+		}
+		return sd;
+	}
+	
+	
+	public long findLargestValueAtOrAboveLimit(int limit) {
+		
+		int b = 64;
+		while (--b>=0) {
+			int[] localBuckets = buckets[b];
+			if (null!=localBuckets) {
+				int x = localBuckets.length;
+				while (--x>=0) {
+					if ((localBuckets[x]>=limit)
+							&& (x>=1 
+							    ? localBuckets[x-1]<localBuckets[x] 
+							    : ( b>=1 && buckets[b-1]!=null  
+							         ? buckets[b-1][buckets[b-1].length-1]<localBuckets[x]  
+							         : true ))
+							) {					
+						System.out.println("largest value at "+b+" "+x+"    "+(sums[b][x]/(long)buckets[b][x])+"="+sums[b][x]+"/"+(long)buckets[b][x]);
+						return sums[b][x]/(long)buckets[b][x];						
+					}
+				}
+			}
+		}
+		
+		return -1;
+		
+	}
+	
+		
+	public static HistogramLongPosit merge(HistogramLongPosit a, HistogramLongPosit b) {
+		
+		if (null==a) {
+			return b;
+		} if (null==b) {
+			return a;			
+		} else {
+			
+			HistogramLongPosit result = new HistogramLongPosit(Math.max(a.maxDetailsBits, b.maxDetailsBits), Math.max(a.minBits,b.minBits));
+			
+			result.maxValue = Math.max(a.maxValue, b.maxValue);
+			result.totalCount = (a.totalCount + b.totalCount);
+			
+			for(int x=0; x<result.buckets.length; x++) {
+				
+				
+				if (a.sums[x]==null) {
+					
+					result.sums[x] = b.sums[x];
+					result.buckets[x] = b.buckets[x];
+					
+				} else if (b.sums[x]==null) {
+										
+					result.sums[x] = a.sums[x];
+					result.buckets[x] = a.buckets[x];
+					
+				} else {		
+									
+					
+					while (a.sums[x].length > b.sums[x].length) {						
+						halfTheBucketsRun(a, x);
+					}
+					
+					while (b.sums[x].length > a.sums[x].length) {						
+						halfTheBucketsRun(b, x);
+					}
+					
+					//both are now the same length, so combine...
+					
+					int len = a.sums[x].length;
+					
+					long[] aSum = a.sums[x];
+					long[] bSum = b.sums[x];
+					result.sums[x] = new long[len];
+					for(int i=0; i<len; i++) {
+						result.sums[x][i] = aSum[i] + bSum[i];						
+					}	
+
+					int[] aBuckets = a.buckets[x];
+					int[] bBuckets = b.buckets[x];					
+					result.buckets[x] = new int[len];
+					for(int i=0; i<len; i++) {
+						result.buckets[x][i] = aBuckets[i] + bBuckets[i];						
+					}				
+					
+				}
+			}
+			
+			return result;
+		}
+
+	}
+	
+	
+	public static final int FLAG_UN_COMPRESSED = 1<<1;
+	public static final int FLAG_FINISHED  = 1<<0;
+	
 	
 	//if histogram is flat eg only 0 or 1 found in each bucket, then half the resolution until we find a peak forming of peakGoal
 	public static void compact(HistogramLongPosit that, int peakGoal) {
 		
-		//count them all if we find peakGoal quit, if we can never get to peak goal quit.
-		boolean somethingWasCompacted = false;
+		int flags = FLAG_UN_COMPRESSED;
 		do {
-			somethingWasCompacted = false;
+			flags = combineNeighbors(that, peakGoal);
+		} while( 0==flags );
+		
+	}
+
+	public static int combineNeighbors(HistogramLongPosit that, int peakGoal) {
+		int flags = FLAG_UN_COMPRESSED;
+		if (null!=that && null!=that.buckets) {
 			for(int x=0; x<that.buckets.length; x++) {
 				if (that.sums[x]!=null) {
-					int len = that.sums[x].length;
+					
+					final int len = that.sums[x].length;
+					
 					for(int d=0; d<len; d++) {					
 						if (that.buckets[x][d]>=peakGoal) {
-							//System.out.println("found peak");
-							return;//goal hit
+						
+							flags |= FLAG_FINISHED;
+							break;		//System.out.println("found peak");						
 						}
 					}
 					//goal was not hit on this level so compact it
 					if (len>=2) { //only compact if we can
 						//System.out.println("compacting "+len);
-						somethingWasCompacted=true;
-						int newLen = len/2;
-						int[] newBuckets = new int[newLen];
-						long[] newSums = new long[newLen];
-						int j = 0;
-						int k = 0;
-						while (j<newLen) {
-							newBuckets[j] = that.buckets[x][k] + that.buckets[x][k+1];
-							newSums[j]    = that.sums[x][k]    + that.sums[x][k+1];
-							j++;
-							k+=2;
-						}
-						//if (len<=32) {
-						//	System.out.println(Arrays.toString(newBuckets)+" vs "+Arrays.toString(that.buckets[x]));
-						//}
-						that.buckets[x] = newBuckets;
-						that.sums[x] = newSums;
+				
+						flags = flags & FLAG_FINISHED;
+						halfTheBucketsRun(that, x);
+					} else {
+						//can not combine any further without causing unbalanced results
+						flags |= FLAG_FINISHED;
+						break;	
 					}
-					
 				}
 			}
-		} while( somethingWasCompacted);
-		
-		
+		}
+		return flags;
+	}
+
+	private static void halfTheBucketsRun(HistogramLongPosit that, int x) {
+		int len = that.sums[x].length;
+		int newLen = len>>1;
+		int[] newBuckets = new int[newLen];
+		long[] newSums = new long[newLen];
+		int j = 0;
+		int k = 0;
+		while (j<newLen) {
+			newBuckets[j] = that.buckets[x][k] + that.buckets[x][k+1];
+			newSums[j]    = that.sums[x][k]    + that.sums[x][k+1];
+			j++;
+			k+=2;
+		}
+
+		that.buckets[x] = newBuckets;
+		that.sums[x] = newSums;
 	}
 	
-	
 	public static long spikeCenter(HistogramLongPosit that) {
+		return spikeCenter(that,null, 1d);
+	}
+	
+	public static long spikeCenter(HistogramLongPosit that, LongMath[] target, double slopeWeight ) {
 		
-		long maxBucketCount = 0;
+		LongMath maxBucketCount = new LongMath();
+		int maxBucketBucketId = 0;
+		
+				
 		int runLength = 0;
 		
 		long num = 0;
 		long den = 0;
+		int selX = -1;
+		int selD = -1;
 		
-		int c = 0;
+		int floor = 1;
+		
+		
 		for(int x=0; x<that.buckets.length; x++) {
+			double adjRun = Math.pow(slopeWeight, x);
+			
+			//System.out.println("adj: "+adjMax+"  "+adjRun);
+			
 			if (that.sums[x]!=null) {
 				for(int d=0; d<that.sums[x].length; d++) {
-					c++;
-					if (that.buckets[x][d]>0) {
-						if (that.buckets[x][d] >= maxBucketCount) {
+					
+					int selectedX = -1;
+					int selectedD = -1;
+					
+					int runDen = that.buckets[x][d];
+					if (runDen > 0) {
+												
+						double adjMax = Math.pow(slopeWeight, maxBucketBucketId);
+						
+						//System.out.println("run den: "+runDen+"   "+adjRun+"   "+maxBucketCount.value()+"   "+adjMax);
+						
+						if ( (runDen>floor) && ((runDen * adjRun) >= (maxBucketCount.value() * adjMax)) ) {
 							//find the biggest bucket
-							if (that.buckets[x][d] > maxBucketCount) {
-								maxBucketCount = that.buckets[x][d];
+							if ( (runDen * adjRun) > (maxBucketCount.value() * adjMax) ) {
+								maxBucketCount = new LongMath(runDen);
 								runLength = 0;//force replace at bottom.
+								maxBucketBucketId = x;
+								
 							}
-							
+						
 							long runNum = that.sums[x][d];
-							int runDen = that.buckets[x][d];
 							int runCount = 1;
 							int x1 = x;
 							int d1 = d;
 							
+							selectedX = x;
+							selectedD = d;
+							//System.out.println("center found at: "+x+"  "+d+"  result: "+(runNum/(long)runDen));
+							
 							do {
 								while (null!= that.sums[x1] && ++d1<that.sums[x1].length) {
-									if (maxBucketCount == that.buckets[x1][d1]) {
-										runCount++;	
+									if (maxBucketCount.value() == (that.buckets[x1][d1]) ) {
+										runCount++;
+										
 										
 										runNum += that.sums[x1][d1];
 										runDen += that.buckets[x1][d1];
+										
+										//System.out.println("center found at: "+x1+"  "+d1+"  result: "+(runNum/(long)runDen));
 									} else {
 										x1 = that.buckets.length;
 										break;
@@ -161,18 +328,38 @@ public class HistogramLongPosit {
 								d1=0;								
 							} while (++x1<that.buckets.length);
 							
+							
 							if (runCount>=runLength) {// equals is included since these are larger values.
 								runLength = runCount;								
 								num = runNum;
 								den = runDen;
-								
+								selX = selectedX;
+								selD = selectedD;
 							}
 						} 
-					}					
+						
+						
+						
+					}
 				}
 			}
 		}
-		return 0==den ? 0 : num/den;
+		
+		long result =  0==den ? 0 : num/den;
+		
+		//System.out.println("   final center   result: "+(result)+"="+num+"/"+den+"  "+selX+"  "+selD);
+		
+		if (null != target) {
+			
+			if (maxBucketCount.value() > target[0].value()) {
+				target[0] = maxBucketCount; 
+				target[1] = new LongMath(result);
+				
+			}
+			
+		}
+		
+		return result;
 	}
 	
 	
@@ -229,6 +416,7 @@ public class HistogramLongPosit {
 		return result;
 	}
 	
+	
 	public static void record(HistogramLongPosit that, long value) {
 		
 		value = Math.abs(value);
@@ -240,16 +428,15 @@ public class HistogramLongPosit {
 			final long floor = base<=0 ? 0 : (1L<<(base-1));         // 256 also size of window
 			final long ceil =  (1+base)<=0 ? 0 : (1L<<((1+base)-1)); // 512
 			
-			bits = Math.min(that.maxDetailsBits, base<=0 ? 0 : (base-1));
+			bits = Math.min(that.maxDetailsBits, base<=that.minBits ? 0 : (base-that.minBits));
 			
-			that.sums[base] = new long[1<<bits];
+			that.sums[base] = new long[1<<bits]; //TODO: build short array first then grow as needed.
 			that.buckets[base] = new int[1<<bits];
 			
 			//System.out.println("build new block of bits size: "+bits);
 						
 		} else {
-			bits = Math.min(that.maxDetailsBits, base<=0 ? 0 : (base-1));
-			
+			bits = Math.min(that.maxDetailsBits, base<=that.minBits ? 0 : (base-that.minBits));
 			
 		}
 		
@@ -299,7 +486,7 @@ public class HistogramLongPosit {
 							if (half>1) {
 								long avg = sum/(long)b;
 								long center = avg-localFloor;
-								assert(center>0) : "bad center: "+center+" avg "+avg+" localFloor "+localFloor+" d "+d+" floor "+floor;
+								assert(center>=0) : "bad center: "+center+" avg "+avg+" localFloor "+localFloor+" d "+d+" floor "+floor;
 								assert(center<=step);
 								
 								//weighted to the average
