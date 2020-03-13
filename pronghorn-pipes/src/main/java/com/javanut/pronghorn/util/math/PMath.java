@@ -202,11 +202,11 @@ public class PMath {
                         
             int v = localPrimes[localPrimes.length-1];
             
-            while (!isPrime(++v)) {}
+            while (!isPrime(localPrimes, ++v)) {}
             
-            int[] newPrimes = new int[primes.length+1];
-            System.arraycopy(primes, 0, newPrimes, 0, primes.length);
-            newPrimes[primes.length]=v;
+            int[] newPrimes = new int[localPrimes.length+1];
+            System.arraycopy(localPrimes, 0, newPrimes, 0, localPrimes.length);
+            newPrimes[localPrimes.length] = v;
             
             primes = localPrimes = newPrimes;
             
@@ -249,10 +249,10 @@ public class PMath {
      * @param i
      * @return true if is prime
      */
-    private static boolean isPrime(int i) {
-        int j = primes.length;
+    private static boolean isPrime(int[] localPrimes, int i) {
+        int j = localPrimes.length;
         while (--j>=0) {
-            if (i%primes[j] == 0) {
+            if (i%localPrimes[j] == 0) {
                 return false;
             }
         }        
