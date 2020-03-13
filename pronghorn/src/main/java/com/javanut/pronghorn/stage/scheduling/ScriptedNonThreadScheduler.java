@@ -692,7 +692,7 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 			assert(wait<=that.schedule.commonClock) : "wait for next cycle was longer than cycle definition";
 	
 			//skip wait if it is short AND if this thread has max proirity
-			if (wait<10_000 && //short is < 10 microseconds
+			if (wait<8_000 && //short is < 8 microseconds
 				Thread.currentThread().getPriority()==Thread.MAX_PRIORITY) {
 				boolean isNormalCase = that.accumulateWorkHistory();
 				if (that.noWorkCounter > 100_000) { 
@@ -811,7 +811,7 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 			long nowMS = now/1_000_000l;
 	
 			Thread.yield();	//lets another thread run but do not call often since it does not give back cpu
-			if (0!=(nowMS&7)) {// 1/8 of the time every 1 ms we take a break for task manager
+			if (0!=(nowMS&15)) {// 1/16 of the time we take a break for task manager
 				long loopTop = -1;				
 				while (totalRequiredSleep>1_000) {
 					loopTop = now;
@@ -1044,8 +1044,8 @@ public class ScriptedNonThreadScheduler extends StageScheduler implements Runnab
 				assert(reportLowAccuracyClock(that));
 			}
 
-			//No need to run on every call, we run 1 out of every 16
-			if (0== (0xF & that.msgConsumerTrigger++)) {
+			//No need to run on every call, we run 1 out of every 32
+			if (0== (0x1F & that.msgConsumerTrigger++)) {
 				int c = GraphManager.getInputPipeCount(that.graphManager, stage.stageId);
 				for(int i = 1; i<=c ;i++) {
 					Pipe.markConsumerPassDone(GraphManager.getInputPipe(that.graphManager, stage.stageId, i));
