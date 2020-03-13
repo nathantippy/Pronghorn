@@ -2043,7 +2043,11 @@ public class GraphManager {
 	                }
 	                
 	                if (recordElapsedTime) {
-	                	writeElapsed(target, ElapsedTimeRecorder.elapsedAtPercentile(m.stageElapsed[stage.stageId],(float)percentile));
+	                	try {
+	                		writeElapsed(target, ElapsedTimeRecorder.elapsedAtPercentile(m.stageElapsed[stage.stageId],(float)percentile));
+	                	} catch (Throwable t) {
+	                		//do not produce since we have no data.
+	                	}
 	                }
 	                
 
