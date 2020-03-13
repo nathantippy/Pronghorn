@@ -83,53 +83,52 @@ public class PipeMonitorStage extends PronghornStage {
 	
 	private void monitorSinglePipe(Pipe<PipeMonitorSchema> output, Pipe<?> localObserved) {
 
-		if ((!GraphManager.monitorAll) && GraphManager.getRingProducer(gm, localObserved.id).isMonitor() ) {
-			//do not read if we are monitoring the monitor and this feature is off.			
-			return;
-		}		
+		//do not read if we are monitoring the monitor and this feature is off.			
+		if (GraphManager.monitorAll || (!GraphManager.getRingProducer(gm, localObserved.id).isMonitor()) ) {
 		
-		//if we can't write then do it again on the next cycle, and skip this data point.
-		
-		if (Pipe.hasRoomForWrite(output,SAMP_SIZE)) {
-											
-			long headPosition = Pipe.headPosition(localObserved);
-			long tailPosition = Pipe.tailPosition(localObserved);
+			//if we can't write then do it again on the next cycle, and skip this data point.
 			
-			//only write if we have new data
-			if (headPosition!=lastHead || tailPosition!=lastTail) {
+			if (Pipe.hasRoomForWrite(output,SAMP_SIZE)) {
+												
+				long headPosition = Pipe.headPosition(localObserved);
+				long tailPosition = Pipe.tailPosition(localObserved);
 				
+				//only write if we have new data
+				if (headPosition!=lastHead || tailPosition!=lastTail) {
+					
+				
+					final int size = Pipe.addMsgIdx(output, MSG_RINGSTATSAMPLE_100);
 			
-				final int size = Pipe.addMsgIdx(output, MSG_RINGSTATSAMPLE_100);
+					Pipe.addLongValue(System.currentTimeMillis(), output);
+					Pipe.addLongValue(lastHead = headPosition, output);
+					Pipe.addLongValue(lastTail = tailPosition, output);
+					Pipe.addIntValue(localObserved.lastMsgIdx, output);
+					Pipe.addIntValue(localObserved.sizeOfSlabRing, output);
+					Pipe.addLongValue(Pipe.totalWrittenFragments(localObserved), output);
 		
-				Pipe.addLongValue(System.currentTimeMillis(), output);
-				Pipe.addLongValue(lastHead = headPosition, output);
-				Pipe.addLongValue(lastTail = tailPosition, output);
-				Pipe.addIntValue(localObserved.lastMsgIdx, output);
-				Pipe.addIntValue(localObserved.sizeOfSlabRing, output);
-				Pipe.addLongValue(Pipe.totalWrittenFragments(localObserved), output);
-	
-				Pipe.confirmLowLevelWrite(output, size);
-				Pipe.publishWrites(output);
-			
+					Pipe.confirmLowLevelWrite(output, size);
+					Pipe.publishWrites(output);
+				
+				}
+				
+							
+			} else {
+				
+				//if unable to write then the values are dropped.
+				if (Long.numberOfLeadingZeros(dropped)!=Long.numberOfLeadingZeros(++dropped)) {			
+					PronghornStage consumer = GraphManager.getRingConsumer(this.gm, output.id);
+					
+					logger.info("Telemetry is not consuming collected data fast enough dropped:{} rate:{}ns  {}\n consumer:{}",
+							    dropped,
+							    (Number)GraphManager.getNota(gm, this, GraphManager.SCHEDULE_RATE, -1),
+							    output,
+							    consumer);
+					
+				}
+				//if this is happening we probably have a blocking stage which does not release the thread??
+				
+				
 			}
-			
-						
-		} else {
-			
-			//if unable to write then the values are dropped.
-			if (Long.numberOfLeadingZeros(dropped)!=Long.numberOfLeadingZeros(++dropped)) {			
-				PronghornStage consumer = GraphManager.getRingConsumer(this.gm, output.id);
-				
-				logger.info("Telemetry is not consuming collected data fast enough dropped:{} rate:{}ns  {}\n consumer:{}",
-						    dropped,
-						    (Number)GraphManager.getNota(gm, this, GraphManager.SCHEDULE_RATE, -1),
-						    output,
-						    consumer);
-				
-			}
-			//if this is happening we probably have a blocking stage which does not release the thread??
-			
-			
 		}
 	}
 
