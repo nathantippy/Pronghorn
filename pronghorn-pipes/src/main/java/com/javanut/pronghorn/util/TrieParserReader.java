@@ -417,9 +417,13 @@ public class TrieParserReader {
 	 */
 	public static int savePositionMemo(TrieParserReader that, int[] target, int offset) {
 
-		target[offset] = that.sourcePos & that.sourceMask;
+		target[offset] = position(that);
 		return target[offset+1] = that.sourceLen;
 		
+	}
+
+	public static int position(TrieParserReader that) {
+		return that.sourcePos & that.sourceMask;
 	}
 
 
@@ -552,7 +556,7 @@ public class TrieParserReader {
 	public static int parseSkipOne(TrieParserReader reader) {
 
 		if (reader.sourceLen>=1) {
-			int result = reader.sourceBacking[reader.sourcePos & reader.sourceMask];
+			int result = reader.sourceBacking[position(reader)];
 			reader.sourcePos++;
 			reader.sourceLen--;
 			return 0xFF & result;
@@ -564,13 +568,27 @@ public class TrieParserReader {
 
 	public static boolean parseSkipUntil(TrieParserReader reader, int target) {    	
 		//skip over everything until we match the target, then we can parse from that point
-		while ((reader.sourceLen > 0) && (reader.sourceBacking[reader.sourcePos & reader.sourceMask] != target )) {
+		while ((reader.sourceLen > 0) && (reader.sourceBacking[position(reader)] != target )) {
 			reader.sourcePos++;
+			reader.sourceLen--;
 		}
 
 		return reader.sourceLen > 0;
 	}
-
+	
+	//if this equals we move forward, if not we leave it
+	public static boolean positionEquals(TrieParserReader reader, byte[] value) {
+		
+		if (!Pipe.isEqual(value, 0, Integer.MAX_VALUE,
+				            reader.sourceBacking, reader.sourcePos, reader.sourceMask, value.length)) {
+			return false;			
+		} else {
+			reader.sourcePos += value.length;
+			reader.sourceLen -= value.length;
+			return true;
+		}
+		
+	}
 
 	public static int parseCopy(TrieParserReader reader, long count, DataOutputBlobWriter<?> writer) {
 
@@ -620,6 +638,29 @@ public class TrieParserReader {
 		reader.sourcePos = pos;
 
 	}    
+	
+	public static boolean parseGather(TrieParserReader reader, ByteConsumer hereDoc, byte[] goal) {
+
+		int startPos = TrieParserReader.position(reader);
+		int startLen = reader.sourceLen;
+					
+		boolean foundFirstChar = TrieParserReader.parseSkipUntil(reader, goal[0]);
+		while (foundFirstChar) {
+			
+			if (TrieParserReader.positionEquals(reader, goal)) {
+				hereDoc.consume(reader.sourceBacking, startPos, (startLen-reader.sourceLen)-(goal.length), reader.sourceMask);
+				return true;
+			} else {
+				//this was not our goal so try again and continue forward
+				foundFirstChar = TrieParserReader.parseSkipUntil(reader, goal[0]);
+			}
+		}
+		//at this point we need to grab what we have seen then return later for more with post processing
+		hereDoc.consume(reader.sourceBacking, startPos, (startLen-reader.sourceLen), reader.sourceMask);
+		
+		return false;
+	}
+
 
 	public static long query(TrieParserReader trieReader, TrieParser trie, Pipe<?> input, final long unfoundResult) {
 		int meta = Pipe.takeByteArrayMetaData(input);
@@ -2189,7 +2230,6 @@ public class TrieParserReader {
 		}
 		return totalBytes;
 	}
-
 
 
 
