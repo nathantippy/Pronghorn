@@ -58,7 +58,8 @@ public class FileBlobReadStage extends PronghornStage {
         this.inputPathString = inputPathString;
         this.output = output;
 
-        GraphManager.addNota(graphManager, GraphManager.DOT_BACKGROUND, "cornsilk2", this);
+        GraphManager.addNota(graphManager, GraphManager.DOT_RANK_NAME, "fileio", stageId);
+        GraphManager.addNota(graphManager, GraphManager.DOT_BACKGROUND, "lemonchiffon3", this);
         
         if (null==inputPathString || inputPathString.length()==0) {
         	//do not bother running if we have no file.

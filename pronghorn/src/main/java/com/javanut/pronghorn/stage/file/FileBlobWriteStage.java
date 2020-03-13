@@ -107,12 +107,12 @@ public class FileBlobWriteStage extends PronghornStage{
         this.basePath = pathBase;
         this.extension = ".log";
         
-        GraphManager.addNota(graphManager, GraphManager.ISOLATE, GraphManager.ISOLATE, this);
+        GraphManager.addNota(graphManager, GraphManager.DOT_RANK_NAME, "fileio", stageId);
+  
         GraphManager.addNota(graphManager, GraphManager.DOT_BACKGROUND, "lemonchiffon3", this);
         long LARGE_SLA_FOR_FILE_WRITE = 10_000_000_000L;
         GraphManager.addNota(graphManager, GraphManager.SLA_LATENCY, LARGE_SLA_FOR_FILE_WRITE, this);
         
-        GraphManager.addNota(graphManager, GraphManager.DOT_RANK_NAME, "SocketWriter", this);
         
     }
 
