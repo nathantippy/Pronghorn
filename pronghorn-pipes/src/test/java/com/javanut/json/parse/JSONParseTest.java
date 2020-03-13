@@ -166,7 +166,7 @@ public class JSONParseTest {
 			ChannelReader dataStream = (ChannelReader)Pipe.openInputStream(targetData);
 	
 			long header = dataStream.readPackedLong();
-			assertEquals(0,header);
+			assertEquals(0, header);
 			
 			assertEquals(5,      dataStream.readPackedInt());
 			assertEquals("one",  dataStream.readUTFOfLength(dataStream.readShort()));
@@ -447,38 +447,69 @@ public class JSONParseTest {
 
 	private Pipe<RawDataSchema> parseJSON(String sourceData, JSONExtractor extractor) {
 		
-		StructRegistry reg = new StructRegistry();
-		int structId = reg.addStruct();		
-		extractor.addToStruct(reg, structId);
+		Pipe<RawDataSchema> testInputData = buildPopulatedSourcePipe(sourceData);
 		
+		TrieParserReader reader = buildSourceReader(testInputData); //can also read from simple byte[]
+
+		
+		StructRegistry reg = new StructRegistry();
+		int addStruct = reg.addStruct();
+		extractor.addToStruct(reg, addStruct);
+		
+		Pipe<RawDataSchema> targetData = buildTargetPipe(reg);
+		parse(extractor, reader, targetData);	
+		
+		
+		return targetData;
+	}
+
+	public Pipe<RawDataSchema> buildPopulatedSourcePipe(String sourceData) {
 		/////////////////
 		//source test data.
-		PipeConfig<RawDataSchema> testInputDataConfig = RawDataSchema.instance.newPipeConfig(4, 512);
-		Pipe<RawDataSchema> testInputData = new Pipe<RawDataSchema>(testInputDataConfig);
+		Pipe<RawDataSchema> testInputData = new Pipe<RawDataSchema>(RawDataSchema.instance.newPipeConfig(4, 512));
 		testInputData.initBuffers();
-		Pipe.structRegistry(testInputData, reg);
 		
 		int size = Pipe.addMsgIdx(testInputData, 0);
 		Pipe.addUTF8(sourceData, testInputData);
 		Pipe.confirmLowLevelWrite(testInputData, size);
 		Pipe.publishWrites(testInputData);				
 		////
-		
+		return testInputData;
+	}
+
+	public void populateSourcePipe(String sourceData, Pipe<RawDataSchema> testInputData) {
+		int size = Pipe.addMsgIdx(testInputData, 0);
+		Pipe.addUTF8(sourceData, testInputData);
+		Pipe.confirmLowLevelWrite(testInputData, size);
+		Pipe.publishWrites(testInputData);
+	}
+
+	public Pipe<RawDataSchema> buildSourcePipe() {
+		Pipe<RawDataSchema> testInputData = new Pipe<RawDataSchema>(RawDataSchema.instance.newPipeConfig(4, 512));
+		testInputData.initBuffers();
+		return testInputData;
+	}
+
+	public TrieParserReader buildSourceReader(Pipe<RawDataSchema> testInputData) {
 		TrieParserReader reader = new TrieParserReader(true);
-		
+	
 		//start consuming the data from the pipe
 		int msgIdx = Pipe.takeMsgIdx(testInputData);
-		TrieParserReader.parseSetup(reader ,testInputData); 
-
-		//export data to this pipe 	
-		PipeConfig<RawDataSchema> targetDataConfig = RawDataSchema.instance.newPipeConfig(16, 512);
-		Pipe<RawDataSchema> targetData = new Pipe<RawDataSchema>(targetDataConfig);
-		targetData.initBuffers();
-		Pipe.structRegistry(targetData, reg);
-
+		TrieParserReader.parseSetup(reader ,testInputData);
 		Pipe.confirmLowLevelRead(testInputData, Pipe.sizeOf(testInputData, msgIdx));
 		Pipe.releaseReadLock(testInputData);
+		return reader;
+	}
 
+	public Pipe<RawDataSchema> buildTargetPipe(StructRegistry reg) {
+		//export data to this pipe 	
+		Pipe<RawDataSchema> targetData = new Pipe<RawDataSchema>(RawDataSchema.instance.newPipeConfig(16, 512));
+		targetData.initBuffers();
+		Pipe.structRegistry(targetData, reg);
+		return targetData;
+	}
+
+	public void parse(JSONExtractor extractor, TrieParserReader reader, Pipe<RawDataSchema> targetData) {
 		//parse data data		
 		JSONStreamParser parser = new JSONStreamParser();
 		JSONStreamVisitorToChannel visitor = extractor.newJSONVisitor();
@@ -510,10 +541,6 @@ public class JSONParseTest {
 			
 			
 		} while (visitor.isReady() && TrieParserReader.parseHasContent(reader));
-		
-		
-		
-		return targetData;
 	}
 	
 	private void parseJSONLoad(int i,

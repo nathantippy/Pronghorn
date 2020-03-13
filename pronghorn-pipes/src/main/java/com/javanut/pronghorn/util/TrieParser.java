@@ -964,7 +964,7 @@ public class TrieParser implements Serializable {
             int length = 0;
                     
             int parentType = -1;
-            while (true) {
+            while ( (sourceMask&sourcePos)<source.length) {
             
             	int topPos = pos;
                 int type = 0xFF & data[pos++];
@@ -1086,7 +1086,7 @@ public class TrieParser implements Serializable {
 	                	}
                 		break;
                     case TYPE_BRANCH_VALUE:
-                        
+                
                         short v = (short) source[sourceMask & sourcePos];
                         if (NO_ESCAPE_SUPPORT!=ESCAPE_BYTE && ESCAPE_BYTE==v && ESCAPE_BYTE!=source[sourceMask & (1+sourcePos)] ) {
                             //we have found an escape sequence so we must insert a branch here we cant branch on a value              	
@@ -1209,7 +1209,7 @@ public class TrieParser implements Serializable {
                 				pos++;
                 				length += 2;
                 				sourcePos += 2;
-                				
+                			
                 				break;
                     		}
                     	}
@@ -1243,6 +1243,7 @@ public class TrieParser implements Serializable {
                     		pos++;//for the stop consumed
                     		length += 3;//move length forward by count of extracted bytes
                             sourcePos += 3;
+                           
                     	}
                                         
                         
@@ -1261,11 +1262,11 @@ public class TrieParser implements Serializable {
                             int afterWhileLength = length+r;
                             while (--r >= 0) {
                                 byte sourceByte = source[sourceMask & sourcePos++];
-                                
+                              
                                 //found an escape byte, so this set may need to break the run up.
                                 if (ESCAPE_BYTE == sourceByte && NO_ESCAPE_SUPPORT!=ESCAPE_BYTE) {
                                     sourceByte = source[sourceMask & sourcePos++];
-             
+                                 
                                     //confirm second value is not also the escape byte so we do have a command
                                     if (ESCAPE_BYTE != sourceByte) {                           
 										insertAtBranchValueAlt(pos, source, sourceLength, sourceMask, value, length, runPos, run, r+afterWhileRun,	sourcePos-2); //TODO: this count can be off by buried extractions.      
@@ -1274,6 +1275,7 @@ public class TrieParser implements Serializable {
                                     } else {
                                     	
                                        sourcePos+=1;//found literal
+                                       
                                     }
                                     //else we have two escapes in a row therefore this is a literal
                                 }                                
@@ -1300,12 +1302,12 @@ public class TrieParser implements Serializable {
                         while (--r >= 0) {
                             
                             byte sourceByte = source[sourceMask & sourcePos++];                            
-                       
+                            
                             if (((caseMask&data[pos]) != (caseMask&0xFF&sourceByte)) && ESCAPE_BYTE == sourceByte && NO_ESCAPE_SUPPORT!=ESCAPE_BYTE) {
                             	//source byte is %
                                                 
                                 sourceByte = source[sourceMask & sourcePos++];
-                                
+                               
                                 if (ESCAPE_BYTE != sourceByte) {
                                     //sourceByte holds the specific command
      
@@ -1317,14 +1319,13 @@ public class TrieParser implements Serializable {
                                 
                                 	//this was %%
                                     sourcePos+=1; //found literal
+                               
                                 }
                                 //else we have two escapes in a row therefore this is a literal
                             }                          
                             
-                            if ((caseMask&data[pos++]) != (caseMask&0xFF&sourceByte)) {
-                                                                      	
-                            	insertAtBranchValueByte(pos, source, sourceLength, sourceMask, value, length, runPos, run, r, sourcePos-1);    		
-                            	                            	 
+                            if ((caseMask&data[pos++]) != (caseMask&0xFF&sourceByte)) {                                                                      	
+                            	insertAtBranchValueByte(pos, source, sourceLength, sourceMask, value, length, runPos, run, r, sourcePos-1);    		                 	 
                                 maxExtractedFields = Math.max(maxExtractedFields, activeExtractionCount);
                                 return;
                             }
@@ -2044,7 +2045,11 @@ public class TrieParser implements Serializable {
        int sourceStop = sourceLength+sourcePos;
        short activeRunLength = 0;
        while (--runLeft >= 0) {
-                  short value = (short)(0xFF&source[sourceMask & sourcePos++]);
+    	   		  int temp = sourceMask & sourcePos++;
+    	   		  if (temp>=source.length) {//protect against end of scan
+    	   			  return pos;
+    	   		  }
+                  short value = (short)(0xFF&source[temp]);
                   if (ESCAPE_BYTE == value && NO_ESCAPE_SUPPORT!=ESCAPE_BYTE) {
                      
                       value = source[sourceMask & sourcePos++];
