@@ -2586,7 +2586,11 @@ public class GraphManager {
 		if (traf>9999) {
 			Appendables.appendValue(target.append("Vol:"), traf);
 		} else {
-			Appendables.appendFixedDecimalDigits(target.append("Vol:"), traf, 1000);
+			if (traf>=0) {
+				Appendables.appendFixedDecimalDigits(target.append("Vol:"), traf, 1000);
+			} else {
+				new Exception("bad traff: "+traf).printStackTrace();
+			}
 		}
 	}
 

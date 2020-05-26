@@ -136,8 +136,13 @@ public class ConsoleSummaryStage<T extends MessageSchema<T>> extends PronghornSt
 
     private boolean cleanupReport(String label, long newMessages, long totalMessages) throws IOException {
         if (newMessages>0) {
-			Appendables.appendValue(console.append(" total:"), totalMessages);
-			
+        	
+        	Appendables.appendValue(
+        	Appendables.appendValue(
+			Appendables.appendValue(console.append(" totalMsgs:"), totalMessages).append("  stage:")
+			          ,this.stageId).append(" totalBytes:")
+        	          ,this.totalBytes);
+        	
 			target.append(label);			
 			target.append(console).append("\n");
 			

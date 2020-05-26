@@ -24,10 +24,6 @@ import com.javanut.pronghorn.pipe.DataInputBlobReader;
 import com.javanut.pronghorn.pipe.DataOutputBlobWriter;
 import com.javanut.pronghorn.pipe.Pipe;
 import com.javanut.pronghorn.pipe.RawDataSchema;
-import com.javanut.pronghorn.util.Appendables;
-import com.javanut.pronghorn.util.ByteConsumer;
-import com.javanut.pronghorn.util.TrieParser;
-import com.javanut.pronghorn.util.TrieParserReader;
 import com.javanut.pronghorn.util.parse.JSONStreamParser;
 
 public class TrieParserTest {
@@ -108,7 +104,7 @@ public class TrieParserTest {
 	@Test
 	public void testCharSequenceQuery() {
 
-		TrieParserReader reader = new TrieParserReader();
+		TrieParserReader reader = new TrieParserReader(true);
 		TrieParser map = new TrieParser(16);
 		CharSequence test = "hello";
 		CharSequence test1 = "1234";
@@ -141,7 +137,7 @@ public class TrieParserTest {
 		TrieParserReader reader = new TrieParserReader(true);
 		TrieParser map = new TrieParser(16);
 		CharSequence test = "hello";
-		CharSequence test1 = "1234";
+		CharSequence test1 = "1234";//always complete so this should be 3
 		CharSequence test2 = "A1234.123";
 		CharSequence test3 = "B1234.123D";
 
@@ -1680,7 +1676,7 @@ public class TrieParserTest {
 
 	@Test
 	public void testMultipleTrysOfTrie() {
-		TrieParserReader reader = new TrieParserReader();
+		TrieParserReader reader = new TrieParserReader(true);
 		TrieParser map = new TrieParser(1000);
 		map.setUTF8Value("tuesday", value2);
 		map.setUTF8Value("hello", "2", value3);
@@ -1710,6 +1706,10 @@ public class TrieParserTest {
 
 		assertEquals(-1, TrieParserReader.parseNext(reader, map));
 
+		//we are only have the parser setup for 10 bytes which are "helloworld"
+		//we should find that but then find nothing else since are are out of data
+		//when this mask is long we are allowed to use old data where we may 
+		//end um matching on "tuesday" if we end up going past the end.
 		TrieParserReader.parseSetup(reader, c, 0, "helloworld".length(), 31);
 
 		assertEquals(0, reader.sourcePos);
@@ -1719,6 +1719,13 @@ public class TrieParserTest {
 		assertEquals(value1, TrieParserReader.parseNext(reader, map));
 		assertEquals(-1, TrieParserReader.parseNext(reader, map));
 
+		//this second test is the same as above but we added 2 chars
+		TrieParserReader.parseSetup(reader, c, 0, "helloworldtu".length(), 31);
+
+		assertEquals(value1, TrieParserReader.parseNext(reader, map));
+		assertEquals(-1, TrieParserReader.parseNext(reader, map));
+
+		
 	}
 
 	@Test
@@ -1727,22 +1734,29 @@ public class TrieParserTest {
 		TrieParser map = new TrieParser(1000);
 		map.setUTF8Value("helloworld", value1);
 		
-		map.setUTF8Value("tuesday", value2);
-
-		map.setUTF8Value("hello", "2", value3);
-	
-		map.setUTF8Value("X%b", "web", value4);
-
-		map.setUTF8Value("%b", "web", value5);
+		map.setUTF8Value("tuesday",    value2);
+		
+		//map.setUTF8Value("%%friday",     value3); ///TODO: fix
+		
+		
+		map.setUTF8Value("hello", "2", value4);	
+		map.setUTF8Value("X%b", "web", value5);
+		map.setUTF8Value("%b", "web",  value6);
 
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
 
 		assertEquals(value1, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
 		assertEquals(value2, TrieParserReader.query(reader, map, "tuesday".getBytes(), 0, 7, 15));
-		assertEquals(value3, TrieParserReader.query(reader, map, "hello2".getBytes(), 0, 6, 15));
-		assertEquals(value4, TrieParserReader.query(reader, map, "Xtheweb".getBytes(), 0, 7, 15));
-		assertEquals(value5, TrieParserReader.query(reader, map, "theweb  ".getBytes(), 0, 6, 15));
+		//assertEquals(value3, TrieParserReader.query(reader, map, "%friday  ".getBytes(), 0, 6, 15));
 
+		assertEquals(value4, TrieParserReader.query(reader, map, "hello2".getBytes(), 0, 6, 15));
+		assertEquals(value5, TrieParserReader.query(reader, map, "Xtheweb".getBytes(), 0, 7, 15));
+		assertEquals(value6, TrieParserReader.query(reader, map, "theweb  ".getBytes(), 0, 6, 15));
+		
+
+		//	assertEquals(value6, TrieParserReader.query(reader, map, "T{esc   ".getBytes(), 0, 6, 15));
+
+		
 		String actual = TrieParserReader.capturedFieldBytesAsUTF8(reader, 0, new StringBuilder()).toString();
 		assertEquals("the", actual);
 
@@ -2566,7 +2580,95 @@ public class TrieParserTest {
 		findShortText(parser, reader, "^hello&", TrieParser.ESCAPE_CMD_DECIMAL);
 		findShortText(parser, reader, "^hello", TrieParser.ESCAPE_CMD_DECIMAL);
 	}
+	
+	@Test
+	public void testCustomEscapeChar2() {
 
+		TrieParser parser = new TrieParser(1000, 1, true, true, false, (byte) '@');
+		TrieParserReader reader = new TrieParserReader(true);
+
+		parser.setUTF8Value("/*@b*/", 7777);
+		
+		parser.setUTF8Value("#{@b}", TrieParser.ESCAPE_CMD_SIGNED_INT); // %i
+		parser.setUTF8Value("#@b/", TrieParser.ESCAPE_CMD_SIGNED_INT); // %i
+		parser.setUTF8Value("#@b?", TrieParser.ESCAPE_CMD_SIGNED_INT); // %i
+		parser.setUTF8Value("#@b&", TrieParser.ESCAPE_CMD_SIGNED_INT); // %i
+		parser.setUTF8Value("#@b", TrieParser.ESCAPE_CMD_SIGNED_INT); // %i
+
+		parser.setUTF8Value("^{@b}", TrieParser.ESCAPE_CMD_DECIMAL); // %i%.
+		parser.setUTF8Value("^@b/", TrieParser.ESCAPE_CMD_DECIMAL); // %i%.
+		parser.setUTF8Value("^@b?", TrieParser.ESCAPE_CMD_DECIMAL); // %i%.
+		parser.setUTF8Value("^@b&", TrieParser.ESCAPE_CMD_DECIMAL); // %i%.
+		parser.setUTF8Value("^@b", TrieParser.ESCAPE_CMD_DECIMAL); // %i%.
+
+		parser.setUTF8Value("${@b}", TrieParser.ESCAPE_CMD_BYTES);
+		parser.setUTF8Value("$@b?", TrieParser.ESCAPE_CMD_BYTES);
+		parser.setUTF8Value("$@b", TrieParser.ESCAPE_CMD_BYTES);
+		parser.setUTF8Value("$@b&", TrieParser.ESCAPE_CMD_BYTES);
+		parser.setUTF8Value("$@b/", TrieParser.ESCAPE_CMD_BYTES);
+
+		parser.setUTF8Value("%{@b}", TrieParser.ESCAPE_CMD_RATIONAL); // %i%/
+		parser.setUTF8Value("%@b/", TrieParser.ESCAPE_CMD_RATIONAL); // %i%/
+		parser.setUTF8Value("%@b?", TrieParser.ESCAPE_CMD_RATIONAL); // %i%?
+		parser.setUTF8Value("%@b&", TrieParser.ESCAPE_CMD_RATIONAL); // %i%&
+		parser.setUTF8Value("%@b", TrieParser.ESCAPE_CMD_RATIONAL); // %i%/
+
+		
+		// parser.toDOT();
+		//System.out.println("custom escape tree:\n"+parser);
+		
+		findShortText(parser, reader, "%hello?", TrieParser.ESCAPE_CMD_RATIONAL);
+		findShortText(parser, reader, "%hello/", TrieParser.ESCAPE_CMD_RATIONAL);
+		findShortText(parser, reader, "%{hello}", TrieParser.ESCAPE_CMD_RATIONAL);
+		findShortText(parser, reader, "%hello&", TrieParser.ESCAPE_CMD_RATIONAL);
+		findShortText(parser, reader, "%hello", TrieParser.ESCAPE_CMD_RATIONAL);
+
+		findShortText(parser, reader, "$hello?", TrieParser.ESCAPE_CMD_BYTES);
+		findShortText(parser, reader, "$hello/", TrieParser.ESCAPE_CMD_BYTES);
+		findShortText(parser, reader, "${hello}", TrieParser.ESCAPE_CMD_BYTES);
+		findShortText(parser, reader, "$hello&", TrieParser.ESCAPE_CMD_BYTES);
+		findShortText(parser, reader, "$hello", TrieParser.ESCAPE_CMD_BYTES);
+
+		findShortText(parser, reader, "#hello?", TrieParser.ESCAPE_CMD_SIGNED_INT);
+		findShortText(parser, reader, "#hello/", TrieParser.ESCAPE_CMD_SIGNED_INT);
+		findShortText(parser, reader, "#{hello}", TrieParser.ESCAPE_CMD_SIGNED_INT);
+		findShortText(parser, reader, "#hello&", TrieParser.ESCAPE_CMD_SIGNED_INT);
+		findShortText(parser, reader, "#hello", TrieParser.ESCAPE_CMD_SIGNED_INT);
+
+		findShortText(parser, reader, "^hello?", TrieParser.ESCAPE_CMD_DECIMAL);
+		findShortText(parser, reader, "^hello/", TrieParser.ESCAPE_CMD_DECIMAL);
+		findShortText(parser, reader, "^{hello}", TrieParser.ESCAPE_CMD_DECIMAL);
+		findShortText(parser, reader, "^hello&", TrieParser.ESCAPE_CMD_DECIMAL);
+		findShortText(parser, reader, "^hello", TrieParser.ESCAPE_CMD_DECIMAL);
+		
+		findShortText(parser, reader, "/** A COMMENT */", 7777);
+	}
+	
+	@Test
+	public void testSimpleEscape() {
+		
+		//TODO: first boolean must be true to make this work??? another item to fix...
+		//      when false we must go back up the stack and check the next value when this does not match!!!
+		//      this will need a rewrite of TrieParserReader.parseBytes( ) so it checks more than first hit.
+		//           it must add to the stack all future possible hits.
+		TrieParser parser = new TrieParser(256, 1, true, true, false, (byte)'@');
+		TrieParserReader reader = new TrieParserReader(false);
+	//	parser.setValue("/**@b*/".getBytes(), 90); //   /**@b*/
+		
+		//TODO: this fails when it gets to first * but then does not continue, fix trieparser or change to 
+		parser.setValue("/*@b/".getBytes(), 11);		
+		parser.setValue("#@b\n".getBytes(), 12);
+		parser.setValue("for @b ".getBytes(), 13);
+		
+		
+		findShortText(parser, reader, "/* * comment *e/", 11);
+		
+		//StringBuilder builder = new StringBuilder();
+		//reader.capturedFieldBytesAsUTF8(reader, 0, builder);
+		//System.out.println(builder);
+		
+	}
+	
 	@Test
 	public void testPatternExtraction() {
 		TrieParser parser = new TrieParser(1000, 1, true, true);
@@ -2656,15 +2758,19 @@ public class TrieParserTest {
 		map.setValue(wrapping(data3b, 3), 1, 7, 7, value4);
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
 				
-		map.setValue(wrapping(escapedEscape, 3), 1, 7, 7, value2);
+		map.setValue(wrapping(escapedEscape, 3), 0, 7, 7, value2);
 		
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
 
 		assertEquals(value3, TrieParserReader.query(reader, map, wrapping(data2b, 3), 1, 7, 7));
 		assertEquals(value4, TrieParserReader.query(reader, map, wrapping(data3b, 3), 1, 7, 7));
 		
-		assertEquals(value2, TrieParserReader.query(reader, map, wrapping(escapedEscape, 3), 1, 7, 7));
+		assertEquals(value2, TrieParserReader.query(reader, map, wrapping(escapedEscape, 3), 0, 7, 7));
 
+		/////
+		
+		
+		
 	}
 
 	@Test

@@ -1506,7 +1506,7 @@ public class TrieParser implements Serializable {
             case ESCAPE_CMD_RATIONAL:
                 return TrieParser.NUMERIC_FLAG_SIGN | TrieParser.NUMERIC_FLAG_RATIONAL;
             default:
-                throw new UnsupportedOperationException("Unsupported % operator found '"+((char)sourceByte)+"'");
+                return Short.MIN_VALUE;
         }
     }
 
@@ -2011,19 +2011,18 @@ public class TrieParser implements Serializable {
         return pos;
     }
     
-    private int writeNumericExtract(int pos, int type) {
-    	
+    private int writeNumericExtract(int pos, int type, short numBits) {
 		int neededLen = pos+2;
 		if (neededLen>data.length) {
 			   growDataLen(neededLen); 
 		}
 		
         data[pos++] = TYPE_VALUE_NUMERIC;
-        data[pos++] = buildNumberBits((byte)type);
+        data[pos++] = numBits;
         extractions[activeExtractionCount++] = (byte)type;
         maxExtractedFields = Math.max(maxExtractedFields, activeExtractionCount);
         return pos;
-    }
+	}
  
     private int writeRuns(int pos, byte[] source, int sourcePos, int sourceLength, int sourceMask) {
     	
@@ -2037,7 +2036,8 @@ public class TrieParser implements Serializable {
     	   growDataLen(neededLen); 
        }
        
-       assert(ESCAPE_BYTE != source[sourceMask & (sourcePos+sourceLength-1)]) : "Escape byte is always followed by something and can not be last.";
+      //this is no longer true due to partials 
+      // assert(ESCAPE_BYTE != source[sourceMask & (sourcePos+sourceLength-1)]) : "Escape byte is always followed by something and can not be last.";
               
        pos = writeRunHeader(pos, sourceLength);
        int runLenPos = pos-1;
@@ -2072,16 +2072,25 @@ public class TrieParser implements Serializable {
                               if (remainingLength > 0) {
                                   pos = writeRuns(pos, source, sourcePos, remainingLength, sourceMask);
                               }
-                          } else {
-                              pos = writeNumericExtract(pos, value);                                                            
-                              int remainingLength = runLeft-1;                                                         
-                              if (remainingLength > 0) {
-                                  pos = writeRuns(pos, source, sourcePos, remainingLength, sourceMask);
+                              maxExtractedFields = Math.max(maxExtractedFields, activeExtractionCount);
+                              return pos;
+                          } else { ///  BAD ASSUMPTION THIS MAY NOT BE A NUMBER??
+                              short numBits = buildNumberBits((byte)(int) value);
+                              if (Short.MIN_VALUE!=numBits) {							  
+	                              pos = writeNumericExtract(pos, value, numBits);                                                            
+	                              int remainingLength = runLeft-1;                                                         
+	                              if (remainingLength > 0) {
+	                                  pos = writeRuns(pos, source, sourcePos, remainingLength, sourceMask);
+	                              }
+	                              maxExtractedFields = Math.max(maxExtractedFields, activeExtractionCount);
+	                              return pos;
+                              } else {//ELSE we assume that this is a normal char after an escape
+                            	  throw new UnsupportedOperationException("unknown data");
+                            	  
                               }
-                          }
-                          maxExtractedFields = Math.max(maxExtractedFields, activeExtractionCount);
+                          }                         
                           
-                          return pos;
+                         
                       } else {
                           //do NOT add this value a second time here.
                           activeRunLength++;

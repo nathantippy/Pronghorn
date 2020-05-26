@@ -535,7 +535,8 @@ public class StructRegistry { //prong struct store
 		final int idx = IntHashTable.getItem(structTable, hash);
 		if (0==idx) {
 			if (!IntHashTable.hasItem(structTable, hash)) {
-				throw new UnsupportedOperationException("Object not found: "+assoc);			
+				
+				throw new UnsupportedOperationException("Object not found: "+assoc+" in table with "+IntHashTable.count(structTable)+" items.");			
 			}
 		}
 		return idx;

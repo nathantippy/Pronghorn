@@ -373,7 +373,7 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     }
 
     public static <T extends MessageSchema<T>> int length(DataOutputBlobWriter<T> writer) {
-        assert(writer.activePosition>=writer.startPosition) : "active must be after start";
+        assert(writer.activePosition>=writer.startPosition) : "active must be after start "+writer.activePosition+" vs "+writer.startPosition;
         return writer.activePosition-writer.startPosition;
     //	return dif(writer, writer.startPosition, writer.activePosition);
 
@@ -582,20 +582,26 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     public static <T extends MessageSchema<T>, S extends MessageSchema<S>> void writeStream(DataOutputBlobWriter<T> that,  DataInputBlobReader<S> input, int length) {
     	that.activePosition += DataInputBlobReader.read(input, that.byteBuffer, that.activePosition, length, that.byteMask);
     }
-
-	public void writeStream(InputStream inputStream, int length) {	
-		assert hasExpectedData(inputStream, length);
-		Pipe.copyBytesFromInputStreamToRing(inputStream, byteBuffer, activePosition, byteMask, length);
-        activePosition+=length;
+   
+	public int writeStream(InputStream inputStream, int maxLen) {	
+        int copyBytesFromInputStreamToRing = Pipe.copyBytesFromInputStreamToRing(inputStream, byteBuffer, activePosition, byteMask, maxLen);
+		activePosition+=copyBytesFromInputStreamToRing;
+		return copyBytesFromInputStreamToRing;
 	}
 
-	private boolean hasExpectedData(InputStream inputStream, int length) {
-		try {
-			return inputStream.available()>=length;
-		} catch (IOException ioex) {
-			return false;
-		}
+	public int writeStream(InputStream inputStream) {		
+		int copyBytesFromInputStreamToRing = Pipe.copyBytesFromInputStreamToRing(inputStream, byteBuffer, activePosition, byteMask, this.remaining());
+		activePosition+=copyBytesFromInputStreamToRing;
+		return copyBytesFromInputStreamToRing;
 	}
+	
+//	private boolean hasExpectedData(InputStream inputStream, int length) {
+//		try {
+//			return inputStream.available()>=length;
+//		} catch (IOException ioex) {
+//			return false;
+//		}
+//	}
 	
     /////////////////////
     /////////////////////

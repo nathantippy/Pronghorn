@@ -176,20 +176,31 @@ public class PipeMonitorCollectorStage extends PronghornStage {
 		}
 
 		/////////////////////
-		//to minimize monitoring work we only use the last value after reading all the data
+		//minimize monitoring work we only use the last changed value 
 		/////////////////////		
-		if (fragments>=0) {		
+		if (msgSkipped>=0 ) { 	
 			processCapturedData(pos, pctFullAvg, messagesPerSecond, fragments, head, tail, ringSize, msgSkipped, time);
 		}
-	}
 
+	}
+  
 	private void processCapturedData(int pos, short[] pctFullAvg, int[] messagesPerSecond, long fragments, long head,
 			long tail, int ringSize, int msgSkipped, long time) {
 		
-		if (msgSkipped>100 && --reportSlowSpeed>0) {			
+		if (msgSkipped<100) {
+			computeValues(pos, pctFullAvg, messagesPerSecond, fragments, head, tail, ringSize, time);
+			return;
+		} else if (msgSkipped>100 && --reportSlowSpeed>0) {			
 			logger.warn("warning {} samples skipped, telemery read is not keeping up with data", msgSkipped);			
 			//this should not happen unless the system is overloaded and scheduler needs to be updated.			
 		}
+		computeValues(pos, pctFullAvg, messagesPerSecond, fragments, head, tail, ringSize, time);
+		
+		//System.out.println("pipe "+pipeId+" full: "+temp+"   "+percentileFullValues[pipeId]+"  "+pctFullAvg[pos]+"  ");		
+	}
+
+	private void computeValues(int pos, short[] pctFullAvg, int[] messagesPerSecond, long fragments, long head,
+			long tail, int ringSize, long time) {
 		
 		long pctFull = (int)((10000L*(head-tail))/ringSize);
 		
@@ -220,10 +231,14 @@ public class PipeMonitorCollectorStage extends PronghornStage {
 		///////////////// record the data for external use
 		/////////////////////////////////////
 		int pipeId = observedPipeId[pos];
-		trafficValues[pipeId] = fragments; 
-
+		
+		if (fragments>0) {
+			trafficValues[pipeId] = fragments; 
+		}
+		
 		messagesPerSecondValues[pipeId] = messagesPerSecond[pos];
 		int temp = pctFullAvg[pos]/100;//only use zero if it really is zero else round up 
+				
 		percentileFullValues[pipeId] = temp!=0?temp:(pctFullAvg[pos]==0?0:1);
 	}
 

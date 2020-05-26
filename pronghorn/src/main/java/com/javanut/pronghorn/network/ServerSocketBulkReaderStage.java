@@ -132,20 +132,21 @@ public class ServerSocketBulkReaderStage extends PronghornStage {
 	    
 	    @Override
 	    public void startup() {
-	    	
-			//look this up once early in case we are running on Java 10+.
-	    	try {
-	    		Class<?> clazz = Class.forName("jdk.net.ExtendedSocketOptions");
-	    		Field field = clazz.getDeclaredField("TCP_QUICKACK");
-	    		
-	    		//System.out.println(Arrays.deepToString(clazz.getDeclaredFields()));
-	    		
-	    		TCP_QUICKACK_LOCAL = (SocketOption<Boolean>)field.get(null);
-	    
-	    	} catch (Throwable t) {
-	    		//ignore, not supported on this platform
+	    	boolean enableExtended = false; //not supported
+	    	if (enableExtended) {
+				//look this up once early in case we are running on Java 10+.
+		    	try {
+		    		Class<?> clazz = Class.forName("jdk.net.ExtendedSocketOptions");
+		    		Field field = clazz.getDeclaredField("TCP_QUICKACK");
+		    		
+		    		//System.out.println(Arrays.deepToString(clazz.getDeclaredFields()));
+		    		
+		    		TCP_QUICKACK_LOCAL = (SocketOption<Boolean>)field.get(null);
+		    
+		    	} catch (Throwable t) {
+		    		//ignore, not supported on this platform
+		    	}
 	    	}
-			
 	    	this.selectedKeyHolder = new SelectedKeyHashMapHolder();
 			
 	    	dataReader.generateSocketHolder();

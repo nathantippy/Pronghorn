@@ -29,10 +29,11 @@ public class TrieParserReader {
 
 	private static final Logger logger = LoggerFactory.getLogger(TrieParserReader.class);
 
-	private byte[] sourceBacking;
+	public byte[] sourceBacking;
 	public int     sourcePos;
 	public int     sourceLen;
 	public int     sourceMask;
+	public int     sourceBase;
 
 	private static final int NUMERIC_TYPE_MASK            =  0x03F; //shift zero this is low
 	private static final int NUMERIC_LENGTH_MASK          = 0x01FF; //shift 6 (512)
@@ -85,6 +86,7 @@ public class TrieParserReader {
 
 	public void debug() {
 		System.err.println(TrieParserReader.class.getName()+" reader debug() details:");
+		
 		System.err.println("pos  "+sourcePos+" masked "+(sourcePos&sourceMask));
 		System.err.println("len  "+sourceLen);
 		System.err.println("mask "+sourceMask);
@@ -215,7 +217,7 @@ public class TrieParserReader {
 		recordSafePointEnd(this, localSourcePos, pos, that);  
 		pos += that.SIZE_OF_RESULT;
 		if (sourceLength == localSourcePos) {
-			this.result = useSafePointNow(this);
+			this.result = useSafePoint(this);
 
 			//add to result set
 			visitor.addToResult(this.result);
@@ -360,6 +362,10 @@ public class TrieParserReader {
 		}
 	}
 
+	public static boolean hasSourceBacking(TrieParserReader reader) {
+		return reader.sourceBacking!=null;
+	}
+	
 	private static void visitorInitForQuery(TrieParserReader reader, TrieParser trie, byte[] source, int sourcePos, long unfoundResult, long noMatchResult) {
 		reader.capturedPos = 0;
 		reader.sourceBacking = source;
@@ -391,10 +397,13 @@ public class TrieParserReader {
 	public static void parseSetup(TrieParserReader that, byte[] source, int offset, int length, int mask) {
 		assert(length<=source.length) : "length is "+length+" but the array is only "+source.length;
 		that.sourceBacking = source;	
-		that.sourcePos     = offset;
 		assert(that.sourcePos>=0) : "Negative source position offsets are not supported.";
 		that.sourceLen     = length;
 		that.sourceMask    = mask;
+		that.sourcePos     = (offset&mask);
+		that.sourceBase    = (offset&mask); //used for compute of which byte we are on now
+		
+		//System.out.println("xxxxx  start "+(mask&offset)+"  end "+(mask&(length+offset)));
 		
 		assert(that.sourceLen <= ((long)that.sourceMask) + 1) : 
 			  "ERROR the source length is larger than the backing array. "+that.sourceLen+" > "+(that.sourceMask + 1);
@@ -404,6 +413,7 @@ public class TrieParserReader {
 
 
 	public static void parseSetupGrow(TrieParserReader that, int additionalLength) {
+		//System.out.println("zzzzzzzzzzzzzzzzzzzz adding "+additionalLength+" to the existing "+that.sourceLen);
 		that.sourceLen += additionalLength;
 		assert(that.sourceLen <= that.sourceMask) : "length is out of bounds";
 	}
@@ -426,9 +436,13 @@ public class TrieParserReader {
 		return that.sourcePos & that.sourceMask;
 	}
 
+	public static int bytesConsumedAfterSetup(TrieParserReader that) {
+		return that.sourcePos - that.sourceBase;
+	}
 
 	public static void loadPositionMemo(TrieParserReader that, int[] source, int offset) {
 
+		//System.out.println("qqqqqqqqqqqqqqqqqqq replace "+that.sourceLen+" with "+ source[offset+1]);
 		that.sourcePos = source[offset];
 		that.sourceLen = source[offset+1];
 
@@ -503,19 +517,27 @@ public class TrieParserReader {
 
 		final int originalPos = reader.sourcePos;
 		final int originalLen = reader.sourceLen;   
-
+		
 		long result =  query(reader, trie, reader.sourceBacking, originalPos, originalLen, reader.sourceMask, unfound, notAnyPossibleMatch);
 
 		//Hack for now
 		if (reader.sourceLen < 0) {
+			
+			//System.err.println("error neg length: "+reader.sourceLen);
+			//where did this last come from to cause a neg len?
+			
 			//logger.info("warning trieReader is still walking past end");
 			//TODO: URGENT FIX requred, this is an error in the trieReader the pattern "%b: %b\r\n" goes past the end and must be invalidated
 			result = unfound;//invalidate any selection
+			return result;//prevent the original positions from getting reset 
 		}
 		//end of hack
 
-
-		if (result!=unfound && result!=notAnyPossibleMatch) {
+		if (result!=unfound) {
+			//this is the normal found case and the notAnyPossibleMatch value
+			
+			assert(validatePositionChange(reader, originalPos, originalLen));
+			
 			return result;
 		} else {
 			//not found so roll the pos and len back for another try later
@@ -524,6 +546,19 @@ public class TrieParserReader {
 			return result;
 		}
 
+	}
+
+	private static boolean validatePositionChange(TrieParserReader reader, final int originalPos,
+			final int originalLen) {
+		int a = reader.sourcePos - originalPos;
+		int b = originalLen - reader.sourceLen;
+		boolean ok = a == b;
+		if (!ok) {
+			System.err.println("start: "+originalPos+" "+originalLen);
+			System.err.println("finis: "+reader.sourcePos+" "+reader.sourceLen);
+			
+		}
+		return ok;
 	}
 
 	private static String debugContent(TrieParserReader reader, int debugPos, int debugLen) {
@@ -568,12 +603,16 @@ public class TrieParserReader {
 
 	public static boolean parseSkipUntil(TrieParserReader reader, int target) {    	
 		//skip over everything until we match the target, then we can parse from that point
-		while ((reader.sourceLen > 0) && (reader.sourceBacking[position(reader)] != target )) {
+		int max = reader.sourceMask+1;
+		while ((reader.sourceLen >= 0)
+				&& (--max>=0)
+				&& (reader.sourceBacking[position(reader)] != target )				
+				) {
 			reader.sourcePos++;
 			reader.sourceLen--;
 		}
 
-		return reader.sourceLen > 0;
+		return reader.sourceLen >= 0;
 	}
 	
 	//if this equals we move forward, if not we leave it
@@ -639,24 +678,31 @@ public class TrieParserReader {
 
 	}    
 	
-	public static boolean parseGather(TrieParserReader reader, ByteConsumer hereDoc, byte[] goal) {
+	public static boolean parseGather(TrieParserReader reader, ByteConsumer consumer, byte[] goal) {
 
 		int startPos = TrieParserReader.position(reader);
 		int startLen = reader.sourceLen;
-					
+				
+		
+		//Appendables.appendUTF8(System.out, reader.sourceBacking, startPos, (startLen), reader.sourceMask);
+		
 		boolean foundFirstChar = TrieParserReader.parseSkipUntil(reader, goal[0]);
 		while (foundFirstChar) {
 			
 			if (TrieParserReader.positionEquals(reader, goal)) {
-				hereDoc.consume(reader.sourceBacking, startPos, (startLen-reader.sourceLen)-(goal.length), reader.sourceMask);
+				
+				int len = (startLen-reader.sourceLen)-(goal.length);
+				consumer.consume(reader.sourceBacking, startPos, len, reader.sourceMask);
+	
 				return true;
-			} else {
+			} else {			
+				TrieParserReader.parseSkipOne(reader);
 				//this was not our goal so try again and continue forward
 				foundFirstChar = TrieParserReader.parseSkipUntil(reader, goal[0]);
 			}
 		}
 		//at this point we need to grab what we have seen then return later for more with post processing
-		hereDoc.consume(reader.sourceBacking, startPos, (startLen-reader.sourceLen), reader.sourceMask);
+		consumer.consume(reader.sourceBacking, startPos, (startLen-reader.sourceLen), reader.sourceMask);
 		
 		return false;
 	}
@@ -697,8 +743,11 @@ public class TrieParserReader {
 		
 		initQueryMembers(reader, source, sourcePos & Pipe.BYTES_WRAP_MASK, unfoundResult, noMatchResult); 		
 		lazyInitCapturedArray(reader, trie);		
-		reader.sourceMask = Branchless.ifZero(reader.sourceMask, sourceMask, reader.sourceMask);        
+		reader.sourceMask = Branchless.ifZero(reader.sourceMask, sourceMask, reader.sourceMask);     
+		
+		//System.out.println("Starting with "+sourcePos+" and "+sourceLength);
 		processEachType(reader, trie, source, sourceLength, sourceMask, false, 0, -1);	
+		//System.out.println("normal exit: "+reader.normalExit+" result "+reader.result);
 		return (reader.normalExit) ? exitUponParse(reader, trie) : reader.result;
 	}
 
@@ -756,6 +805,7 @@ public class TrieParserReader {
     
 
 	private static long exitUponParse(TrieParserReader reader, TrieParser trie) {
+		//System.out.println(reader.localSourcePos+" "+reader.sourcePos+" "+reader.sourceLen+" ssssss exitUponParse");
 		reader.sourceLen -= (reader.localSourcePos-reader.sourcePos);
 		reader.sourcePos = reader.localSourcePos;        	        	
 		return TrieParser.readEndValue(trie.data,reader.pos, trie.SIZE_OF_RESULT);
@@ -822,38 +872,33 @@ public class TrieParserReader {
 			int sourceMask, boolean hasSafePoint) {
 		//run
 		final int run = trie.data[reader.pos++];    
-
-		//we will not have the room to do a match.
-		final boolean temp = !hasSafePoint && 0==reader.altStackPos;
 		
-		if (reader.runLength+run <= sourceLength || !temp) {
-
-			//TODO: can we know if it NEVER has a safe point and never has alt stack..S
+		//we will not have the room to do a match.
+		final boolean noOtherChoices = !hasSafePoint && 0==reader.altStackPos;
+		//TODO: can we know if it NEVER has a safe point and never has alt stack..S
+		
+		if (reader.runLength+run <= sourceLength || !noOtherChoices) {
 			
-			if (temp) {
 			
-				if (trie.skipDeepChecks) {
+				if (noOtherChoices & trie.skipDeepChecks) {
 					reader.pos += run;
 					reader.localSourcePos += run; 
 					reader.runLength += run;
 					reader.type = trie.data[reader.pos++];
 					
 				} else {
-					//System.out.println("xxxxxxxxxxx");//not called
-					scanForRun(reader, trie, source, sourceMask, hasSafePoint, run);
+					if (reader.runLength+run <= sourceLength) {
+						scanForRun(reader, trie, source, sourceMask, hasSafePoint, run);
+					} else {
+						noMatchAction(reader, trie, hasSafePoint,
+							(reader.alwaysCompletePayloads || (reader.sourceLen >= run))
+							 ? reader.noMatchConstant : reader.unfoundConstant);
+					}
 				}
-				
-			} else {
-				//This is called for Headers Trie and the URL Route Trie, both have a single altStackPos since
-				//in both cases we want an unknown value to be processed special.
-				//System.out.println("yyyyyyyyyyyy called about half the time "+(!hasSafePoint)+" && 0=="+(reader.altStackPos));
-				scanForRun(reader, trie, source, sourceMask, hasSafePoint, run);
-				
-				//System.out.println(trie);
-				
-			}
+			
 			
 		} else {
+		
 			reader.normalExit=false;
 			reader.result = reader.unfoundConstant;
 			reader.runLength += run;  			
@@ -966,6 +1011,7 @@ public class TrieParserReader {
 		if (reader.runLength < sourceLength) {
 			processMultipleBinBranches(reader, (short) source[sourceMask & reader.localSourcePos], reader.pos, trie.data);
 		} else {
+			
 			reader.normalExit = false;
 			reader.result = reader.unfoundConstant;
 		}
@@ -990,7 +1036,8 @@ public class TrieParserReader {
 		if (reader.runLength<sourceLength) {
 			if ((reader.localSourcePos = parseNumeric(trie.ESCAPE_BYTE, reader,source,reader.localSourcePos, sourceLength-reader.runLength, sourceMask, trie.data[reader.pos++]))<0) {			            	
 				
-				noMatchAction(reader, trie, hasSafePoint, reader.noMatchConstant);
+				noMatchAction(reader, trie, hasSafePoint, 
+						reader.localSourcePos == -1 ?reader.noMatchConstant : reader.unfoundConstant);
 
 			} else {
 				//finished parse of number so move next
@@ -1009,8 +1056,9 @@ public class TrieParserReader {
 		hasSafePoint = true;
 		reader.pos += trie.SIZE_OF_RESULT;
 		if (sourceLength == reader.runLength) {
-			reader.normalExit=false;
-			reader.result = useSafePointNow(reader);
+		
+			reader.normalExit = false;
+			reader.result = useSafePoint(reader); 
 		} else {
 			//move next since we did not take the safe point
 			reader.type = trie.data[reader.pos++];
@@ -1043,6 +1091,7 @@ public class TrieParserReader {
 			if (reader.altStackPos <= 0) {  
 				//we have NO safe point AND we found a non match in the sequence
 				//this will never match no matter how much data is added so return the noMatch code.
+						
 				reader.normalExit=false;
 				reader.result = result;
 			} else {
@@ -1280,12 +1329,6 @@ public class TrieParserReader {
 		reader.pos = pos;		
 	}
 
-	private static long useSafePointNow(TrieParserReader reader) {
-		//hard stop passed in forces us to use the safe point
-		reader.sourceLen -= (reader.localSourcePos -reader.sourcePos);
-		reader.sourcePos = reader.localSourcePos;
-		return reader.safeReturnValue;
-	}
 
 	private static int loadupNextChoiceFromStack(TrieParserReader reader, short[] localData, int altStackPos) {
 		//try other path
@@ -1325,9 +1368,9 @@ public class TrieParserReader {
 
 		reader.safeReturnValue = TrieParser.readEndValue(trie.data, pos, trie.SIZE_OF_RESULT);
 		reader.safeCapturedPos = reader.capturedPos;
-		reader.saveCapturedLen = reader.sourceLen;
+		reader.saveCapturedLen = reader.sourceLen - (localSourcePos-reader.sourcePos);
 
-		reader.safeSourcePos = localSourcePos;        
+		reader.safeSourcePos   = localSourcePos;        
 
 
 		//if the following does not match we will return this safe value.
@@ -1428,6 +1471,8 @@ public class TrieParserReader {
 				templateLimited, 
 				templateLimited ? fixedLength : sourceLengthIn, 
 				(short) source[sourceMask & sourcePos]);
+		//if those bytes were utf8 encoded then this matches the same as writeUTF8 without decode/encode
+
 	}
 
 	private static int parseNumericImpl(final byte escapeByte, final TrieParserReader reader, final byte[] source, final int sourcePos,
@@ -1577,7 +1622,7 @@ public class TrieParserReader {
 				break;
 			}
 		}  while (true);
-		return parseBaseTenFinish(reader, sourcePos, absentIsZero, sign, intValue, intLength, dot, base);
+		return parseBaseFinish(reader, sourcePos, absentIsZero, sign, intValue, intLength, dot, base);
 	}
 
 	private static int parseBaseTenImpl(TrieParserReader reader, byte[] source, int sourcePos, final long sourceLengthIn,
@@ -1602,18 +1647,18 @@ public class TrieParserReader {
 				if (reader.alwaysCompletePayloads || templateLimited) {
 					break;
 				} else {
-					return -1; //we are waiting for more digits in the feed. 
+					return reader.alwaysCompletePayloads ? -1 : -2; //we are waiting for more digits in the feed. 
 				}
 			}
 
 		}  while (true);
-		return parseBaseTenFinish(reader, sourcePos, absentIsZero, sign, intValue, intLength, dot, (byte) 10);
+		return parseBaseFinish(reader, sourcePos, absentIsZero, sign, intValue, intLength, dot, (byte) 10);
 	}
 
-	private static int parseBaseTenFinish(TrieParserReader reader, int sourcePos, final boolean absentIsZero, byte sign,
+	private static int parseBaseFinish(TrieParserReader reader, int sourcePos, final boolean absentIsZero, byte sign,
 			long intValue, byte intLength, int dot, byte base) {
 		if (intLength==0 && !absentIsZero) {
-			return -1;
+			return reader.alwaysCompletePayloads ? -1 : -2;
 		}
 		publish(reader, sign, intValue, intLength, base, dot);
 		return sourcePos-1;

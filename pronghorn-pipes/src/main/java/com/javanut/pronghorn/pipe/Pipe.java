@@ -2898,25 +2898,38 @@ public class Pipe<T extends MessageSchema<T>> {
 		}
 	}
 	
-	public static void copyBytesFromInputStreamToRing(InputStream source, byte[] target, int targetloc, int targetMask, int length) {
+	public static int copyBytesFromInputStreamToRing(InputStream source, byte[] target, int targetloc, int targetMask, int length) {
+		new Exception("new untested code").printStackTrace();
 		assert(length<=targetMask);
+		int resultCount = -1;
 		try {			
 			if (length > 0) {
+				int temp;
 				final int tStart = targetloc & targetMask;
 				final int tStop = (targetloc + length) & targetMask;
 				if (tStop > tStart) {
 					//the source and target do not wrap
-					source.read(target,  tStart, length);
+					temp = source.read(target,  tStart, length);
+					if (temp>=0) {
+						resultCount = temp;
+					}
 				} else {
 					//the source does not wrap but the target does
 					// done as two copies
-					source.read(target, tStart, length-tStop);
-					source.read(target, 0,      tStop);
+					temp = source.read(target, tStart, length-tStop);
+					if (temp>=0) {
+						resultCount = temp;
+					}
+					temp = source.read(target, 0,      tStop);
+					if (temp>=0) {
+						resultCount += temp;
+					}
 				}
 			}
 		} catch (IOException ioex) {
 			throw new RuntimeException(ioex);
 		}	
+		return resultCount;
 	}
 	
 	
@@ -4416,9 +4429,7 @@ public class Pipe<T extends MessageSchema<T>> {
      * @return int value
      */
     public static <S extends MessageSchema<S>> int contentRemaining(Pipe<S> pipe) {
-        int result = (int)(pipe.slabRingHead.headPos.get() - pipe.slabRingTail.tailPos.get()); //must not go past add count because it is not release yet.
-        assert(result>=0) : "content remaining must never be negative. problem in "+schemaName(pipe)+" pipe "; //do not add pipe.toString since it will be recursive.
-        return result;
+        return (int)(pipe.slabRingHead.headPos.get() - pipe.slabRingTail.tailPos.get()); //must not go past add count because it is not release yet.
     }
 
     /**
