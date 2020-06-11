@@ -1729,16 +1729,53 @@ public class TrieParserTest {
 	}
 
 	@Test
+	public void testUTF8SetSmallToLarge() {
+		TrieParserReader reader = new TrieParserReader();
+		TrieParser map = new TrieParser(1000);
+		map.setUTF8Value("hello",                   value1);		
+		map.setUTF8Value("helloworld",      value2);
+		map.setUTF8Value("helloworlds",    value3);
+			
+		assertEquals(value1, TrieParserReader.query(reader, map, "hello".getBytes(), 0, 5, 15));
+		assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+		assertEquals(value3, TrieParserReader.query(reader, map, "helloworlds".getBytes(), 0, 11, 15));
+		assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+		assertEquals(value1, TrieParserReader.query(reader, map, "hello".getBytes(), 0, 5, 15));
+	    assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+	   assertEquals(value3, TrieParserReader.query(reader, map, "helloworlds".getBytes(), 0, 11, 15));	
+		
+		
+	}
+	
+	@Test
+	public void testUTF8SetLargeToSmall() {
+		TrieParserReader reader = new TrieParserReader();
+		TrieParser map = new TrieParser(1000);
+		map.setUTF8Value("helloworlds",    value3);
+		map.setUTF8Value("helloworld",      value2);
+		map.setUTF8Value("hello",                   value1);		
+			
+		assertEquals(value1, TrieParserReader.query(reader, map, "hello".getBytes(), 0, 5, 15));
+		assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+		assertEquals(value3, TrieParserReader.query(reader, map, "helloworlds".getBytes(), 0, 11, 15));
+		assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+		assertEquals(value1, TrieParserReader.query(reader, map, "hello".getBytes(), 0, 5, 15));
+		assertEquals(value2, TrieParserReader.query(reader, map, "helloworld".getBytes(), 0, 10, 15));
+		assertEquals(value3, TrieParserReader.query(reader, map, "helloworlds".getBytes(), 0, 11, 15));	
+		
+		
+	}
+	
+	
+	@Test
 	public void testUTF8Set() {
 		TrieParserReader reader = new TrieParserReader();
 		TrieParser map = new TrieParser(1000);
-		map.setUTF8Value("helloworld", value1);
-		
+		map.setUTF8Value("helloworld", value1);		
 		map.setUTF8Value("tuesday",    value2);
 		
 		//map.setUTF8Value("%%friday",     value3); ///TODO: fix
-		
-		
+				
 		map.setUTF8Value("hello", "2", value4);	
 		map.setUTF8Value("X%b", "web", value5);
 		map.setUTF8Value("%b", "web",  value6);
@@ -1753,7 +1790,6 @@ public class TrieParserTest {
 		assertEquals(value5, TrieParserReader.query(reader, map, "Xtheweb".getBytes(), 0, 7, 15));
 		assertEquals(value6, TrieParserReader.query(reader, map, "theweb  ".getBytes(), 0, 6, 15));
 		
-
 		//	assertEquals(value6, TrieParserReader.query(reader, map, "T{esc   ".getBytes(), 0, 6, 15));
 
 		
@@ -1762,10 +1798,52 @@ public class TrieParserTest {
 
 	}
 
+	
+	
 	@Test
 	public void testUTF8Set2() {
 		TrieParserReader reader = new TrieParserReader();
 		TrieParser map = new TrieParser(1000, false);
+		
+		utf8Set2Run(reader, map);
+
+	}
+	
+	
+	@Test
+	public void testExtractBytesMiddle() {
+		TrieParser map = new TrieParser(16);
+		TrieParserReader reader = new TrieParserReader();
+
+		bytesMiddleRun(map, reader);
+	}
+	
+	@Test
+	public void testExtractBytesBeginning() {
+		TrieParserReader reader = new TrieParserReader();
+		TrieParser map = new TrieParser(16);
+
+		bytesBeginningRun(reader, map);
+
+	}
+	
+
+	@Test
+	public void testParserReuse() {
+		TrieParserReader reader = new TrieParserReader();
+		TrieParser map = new TrieParser(16);
+
+		bytesBeginningRun(reader, map);
+		map.clear();
+		bytesMiddleRun(map, reader);
+		map.clear();
+		utf8Set2Run(reader, map);
+
+	}
+	
+	
+
+	private void utf8Set2Run(TrieParserReader reader, TrieParser map) {
 		map.setUTF8Value("topic19", value1);
 		map.setUTF8Value("/testTopic/%b", value2);
 
@@ -1778,14 +1856,12 @@ public class TrieParserTest {
 
 		String actual = TrieParserReader.capturedFieldBytesAsUTF8(reader, 0, new StringBuilder()).toString();
 		assertEquals("goob", actual);
-
 	}
 
-	@Test
-	public void testExtractBytesMiddle() {
-		TrieParserReader reader = new TrieParserReader();
-		TrieParser map = new TrieParser(16);
 
+	
+	
+	private void bytesMiddleRun(TrieParser map, TrieParserReader reader) {
 		map.setValue(wrapping(data1,3), 0, 3, 7, value1);
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
 
@@ -1815,11 +1891,7 @@ public class TrieParserTest {
 		}
 	}
 
-	@Test
-	public void testExtractBytesBeginning() {
-		TrieParserReader reader = new TrieParserReader();
-		TrieParser map = new TrieParser(16);
-
+	private void bytesBeginningRun(TrieParserReader reader, TrieParser map) {
 		map.setValue(wrapping(data1, 3), 0, 3, 7, value1);
 
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
@@ -1844,7 +1916,6 @@ public class TrieParserTest {
 		int len = TrieParserReader.capturedFieldBytes(reader, 0, target, 0, 63);
 		assertEquals(Arrays.toString(new byte[] { 10, 11, 12, 13 }),
 				Arrays.toString(Arrays.copyOfRange(target, 0, len)));
-
 	}
 
 	@Test

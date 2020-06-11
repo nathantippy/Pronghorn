@@ -183,6 +183,15 @@ public class TrieParser implements Serializable {
         this.caseRuleMask =  ignoreCase ? (byte)0xDF : (byte)0xFF;   
     }
     
+    //dump all the data but keep the allocations so this can be re-used with new data
+    public void clear() {
+    	limit                                         = 0;
+    	maxExtractedFields      = 0;
+    	altStackPos 					       = 0;
+    	activeExtractionCount = 0;
+    	
+    }
+    
     public static int getLimit(TrieParser that) {
     	return that.limit;
     }

@@ -2,6 +2,7 @@ package com.javanut.pronghorn.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import com.javanut.pronghorn.pipe.ChannelReader;
 import com.javanut.pronghorn.pipe.ChannelWriter;
@@ -11,10 +12,12 @@ import com.javanut.pronghorn.pipe.Pipe;
 public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder> {
 
 	private int maximumAllocation;
-	private static final int defaultSize = 1<<15;
+	private static final int defaultSize = 1<<15; //must be power of 2
 	
     private byte[] buffer;	
 	private int byteCount;
+	
+	private AppendableBuilderReader abir = null;
 
 	public AppendableBuilder() {
 		this(Integer.MAX_VALUE);
@@ -30,6 +33,17 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 	
 	public void clear() {
 		byteCount = 0;	
+	}
+	
+	public AppendableBuilderReader reader() {
+		if (null!=abir) {
+			abir.setData(buffer, byteCount);
+			return abir;
+		} else {
+			abir = new AppendableBuilderReader();
+			abir.setData(buffer, byteCount);
+			return abir;
+		}
 	}
 
 	public String toString() {
@@ -63,6 +77,14 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 		return len;
 	}	
 
+	public static void copy(AppendableBuilder source, AppendableBuilder target) {
+		target.write(source.buffer, 0, source.byteCount);	
+	}
+	
+	public static void copy(AppendableBuilderReader source, AppendableBuilder target) {
+		target.write(source.buffer, 0, source.byteCount);	
+	}
+	
 	public void copyTo(Appendable target) {
 		
 		if (target instanceof DataOutputBlobWriter) {
@@ -106,7 +128,10 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 		if (req > that.maximumAllocation) {
 			throw new UnsupportedOperationException("Max allocation was limited to "+that.maximumAllocation+" but more space needed");
 		}
-		byte[] temp = new byte[req];
+		
+		//bufer MUST be power of 2 due to TrieParse requrements elsewhere
+		int bits = (int)Math.ceil(Math.log(req)/Math.log(2)); //find next power to hold this value
+		byte[] temp = new byte[1<<bits];
 		System.arraycopy(that.buffer, 0, temp, 0, that.buffer.length);
 		that.buffer = temp;
 	}
@@ -144,16 +169,11 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 	public void write(byte[] encodedBlock, int pos, int len) {
 		
 		if (byteCount+len <= buffer.length) {
-			Pipe.copyBytesFromArrayToRing(encodedBlock, pos, 
-					buffer, byteCount, Integer.MAX_VALUE, 
-					len);
+			System.arraycopy(encodedBlock, pos, buffer, byteCount, len);
 		} else {
 			growNow(this,byteCount+len);			
-			Pipe.copyBytesFromArrayToRing(encodedBlock, pos, 
-					buffer, byteCount, Integer.MAX_VALUE, 
-					len);			
-		}
-		
+			System.arraycopy(encodedBlock, pos, buffer, byteCount, len);		
+		}		
 		this.byteCount+=len;
 	}
 
@@ -161,16 +181,11 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 	public void write(byte[] encodedBlock) {
 		
 		if (byteCount+encodedBlock.length <= buffer.length) {
-			
-			Pipe.copyBytesFromArrayToRing(encodedBlock, 0, 
-					buffer, byteCount, Integer.MAX_VALUE, 
-					encodedBlock.length);
+			System.arraycopy(encodedBlock, 0, buffer, byteCount, encodedBlock.length);		
 			this.byteCount+=encodedBlock.length;
 		} else {
 			growNow(this,byteCount+encodedBlock.length);
-			Pipe.copyBytesFromArrayToRing(encodedBlock, 0, 
-					buffer, byteCount, Integer.MAX_VALUE, 
-					encodedBlock.length);
+			System.arraycopy(encodedBlock, 0, buffer, byteCount, encodedBlock.length);
 			this.byteCount+=encodedBlock.length;
 		}
 	}
@@ -197,7 +212,7 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 	public boolean isEqual(ChannelReader target) {
 		return target.equalBytes(buffer, 0, byteCount);
 	}
-
+	
 	public int base64Decode(byte[] target, int targetIdx, int targetMask) {
 		return Appendables.decodeBase64(buffer, 0, byteCount, Integer.MAX_VALUE,
 							    target, targetIdx, targetMask);

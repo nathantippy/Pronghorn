@@ -1,4 +1,4 @@
-Pronghorn  [![Powered by CloudBees](https://www.cloudbees.com/sites/default/files/styles/large/public/Button-Powered-by-CB.png?itok=uMDWINfY)](https://pronghorn.ci.cloudbees.com/)
+Pronghorn
 =====
 ### This is the Active Development Repo. For documentation and marketing materials, please visit [this repo](https://github.com/nathantippy/Pronghorn).
 
@@ -24,7 +24,7 @@ Please refer to the [wiki](https://oci-pronghorn.gitbook.io/pronghorn/chapter-0-
     <dependency>
       <groupId>com.javanut</groupId>
       <artifactId>Pronghorn</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.17</version>
     </dependency> 
         
 

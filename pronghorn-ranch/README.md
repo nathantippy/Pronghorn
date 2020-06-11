@@ -12,7 +12,7 @@
 * [Maven](https://maven.apache.org/)
 * Git (or any other way to download from GitHub)
 
-To simplify creation of a Pronghorn project, we created [PronghornRanch](https://github.com/oci-pronghorn/PronghornRanch), a Maven archetype which generates a working Pronghorn example.
+To simplify creation of a Pronghorn project, we created [PronghornRanch](https://github.com/nathantippy/Pronghorn/PronghornRanch), a Maven archetype which generates a working Pronghorn example.
 
 ***
 

@@ -1,5 +1,7 @@
 package com.javanut.pronghorn.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -24,8 +26,8 @@ public class CharSequenceToUTF8 {
 	}
 	
 	public CharSequenceToUTF8 convert(CharSequence charSeq, int pos, int len) {
-		if (len*8>backing.length) {
-			backing = new byte[len*8];
+		if ((len<<3)>backing.length) {
+			backing = new byte[len<<3];
 			if (backing.length>(1<<24)) {
 				logger.warn("large string conversion has caused backing to grow to {} ", backing.length);
 			}
@@ -33,6 +35,18 @@ public class CharSequenceToUTF8 {
 		length = Pipe.convertToUTF8(charSeq, pos, len, backing, 0, Integer.MAX_VALUE);
 		return this;
 	}
+	
+	public CharSequenceToUTF8 convert(char c) {
+		if (8>backing.length) {
+			backing = new byte[8];
+			if (backing.length>(1<<24)) {
+				logger.warn("large string conversion has caused backing to grow to {} ", backing.length);
+			}
+		}
+		length = Pipe.encodeSingleChar((int) c, backing, Integer.MAX_VALUE, 0);
+		return this;
+	}
+	
 	
 	public CharSequenceToUTF8 append(CharSequence charSeq, int pos, int len) {
 		if ((length+(len*8))>backing.length) {
@@ -51,6 +65,14 @@ public class CharSequenceToUTF8 {
 	
 	public byte[] asBytes() {
 		return Arrays.copyOfRange(backing, 0, length);
+	}
+	
+	public void toOutputStream(OutputStream target) {
+		try {
+				target.write(backing, 0, length);
+		} catch (IOException e) {
+			   throw new RuntimeException(e);
+		}
 	}
 	
 	public void copyInto(byte[] target, int offset, int mask) {

@@ -463,7 +463,7 @@ public class JSONParseTest {
 		return targetData;
 	}
 
-	public Pipe<RawDataSchema> buildPopulatedSourcePipe(String sourceData) {
+	public static Pipe<RawDataSchema> buildPopulatedSourcePipe(String sourceData) {
 		/////////////////
 		//source test data.
 		Pipe<RawDataSchema> testInputData = new Pipe<RawDataSchema>(RawDataSchema.instance.newPipeConfig(4, 512));
@@ -490,7 +490,7 @@ public class JSONParseTest {
 		return testInputData;
 	}
 
-	public TrieParserReader buildSourceReader(Pipe<RawDataSchema> testInputData) {
+	public static TrieParserReader buildSourceReader(Pipe<RawDataSchema> testInputData) {
 		TrieParserReader reader = new TrieParserReader(true);
 	
 		//start consuming the data from the pipe
@@ -501,7 +501,7 @@ public class JSONParseTest {
 		return reader;
 	}
 
-	public Pipe<RawDataSchema> buildTargetPipe(StructRegistry reg) {
+	public static Pipe<RawDataSchema> buildTargetPipe(StructRegistry reg) {
 		//export data to this pipe 	
 		Pipe<RawDataSchema> targetData = new Pipe<RawDataSchema>(RawDataSchema.instance.newPipeConfig(16, 512));
 		targetData.initBuffers();
@@ -509,7 +509,7 @@ public class JSONParseTest {
 		return targetData;
 	}
 
-	public void parse(JSONExtractor extractor, TrieParserReader reader, Pipe<RawDataSchema> targetData) {
+	public static void parse(JSONExtractor extractor, TrieParserReader reader, Pipe<RawDataSchema> targetData) {
 		//parse data data		
 		JSONStreamParser parser = new JSONStreamParser();
 		JSONStreamVisitorToChannel visitor = extractor.newJSONVisitor();

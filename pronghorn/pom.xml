@@ -3,7 +3,7 @@
     <groupId>com.javanut</groupId>
     <artifactId>pronghorn</artifactId>
     <name>pronghorn</name>
-    <version>1.1.16</version>
+    <version>1.1.17</version>
    
     <description>Primary dependency for any project using the Pronghorn framework</description>
     <url>https://github.com/oci-pronghorn/Pronghorn</url>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>com.javanut</groupId>
             <artifactId>pronghorn-pipes</artifactId>
-            <version>1.1.16</version>
+            <version>1.1.17</version>
         </dependency>
 
         <dependency>

@@ -14,7 +14,7 @@ Some of the key ideas embodied in the project are:
 
 #Purpose
 
-The purpose of this project was to build a light weight data passing queue for large concurrent application development.  The [Pronghorn](https://github.com/oci-pronghorn/Pronghorn) framework makes use of these queues for all message passing between actors.
+The purpose of this project was to build a light weight data passing queue for large concurrent application development.  The [Pronghorn](https://github.com/nathantippy/Pronghorn) framework makes use of these queues for all message passing between actors.
 
 Applications using Embedded and/or Compact Profiles will find this project most helpful.  None of the collections APIs are used and all the processing is done with primitives.  The only external dependencies are JUnit for testing and SLF4J for logging.  
 
@@ -42,11 +42,8 @@ Internally there is one layout format for the data however to support all the di
 * Low level API for serialized data directly on the ring
 * High level API for field specific access
 * Streaming API using call-backs for each field for dynamic applications.
-* Event Consumer/PRoduceer API for Object mapping
+* Event Consumer/Produceer API for Object mapping
 
-For examples on how these APIs may be used see the projects:
-- https://github.com/oci-pronghorn/PronghornExampleInputStages
-- https://github.com/oci-pronghorn/PronghornExampleOutputStages
 
 #Usage
 
@@ -55,7 +52,7 @@ For examples on how these APIs may be used see the projects:
     <dependency>
       <groupId>com.javanut</groupId>
       <artifactId>PronghornPipes</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.17</version>
     </dependency> 
    
      
