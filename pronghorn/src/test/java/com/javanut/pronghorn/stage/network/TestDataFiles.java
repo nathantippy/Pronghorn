@@ -48,7 +48,7 @@ public class TestDataFiles {
                     FileChannel channel = FileChannel.open(path,StandardOpenOption.WRITE, StandardOpenOption.SYNC);                
                     do {
                         channel.write(fakeData);
-                    } while (fakeData.hasRemaining());
+                    } while (((Buffer)fakeData).hasRemaining());
                     channel.close();
                     
                     testFilePaths[c] = path;

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.StandardSocketOptions;
 import java.net.UnknownHostException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
@@ -184,7 +185,7 @@ public class ClientHTTPSocketRequestGeneratorStage extends PronghornStage {
         
         while (pos < rawDataLength ) {
                         
-            if (!rawData.hasRemaining()) {
+            if (!((Buffer)rawData).hasRemaining()) {
                 int length = 0;
                 int i = batchSize;
                 while (--i>=0) {
@@ -201,7 +202,7 @@ public class ClientHTTPSocketRequestGeneratorStage extends PronghornStage {
                  //   System.out.println("wrote "+len);
                     pos += len;
                     Thread.yield();
-                } while (rawData.hasRemaining());//WARING this is a blocking loop but its part of the load testing test
+                } while (((Buffer)rawData).hasRemaining());//WARING this is a blocking loop but its part of the load testing test
                 realCount += batchSize;
                                 
             } catch (IOException e) {

@@ -1,6 +1,7 @@
 package com.javanut.pronghorn.stage.file;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
@@ -253,7 +254,7 @@ public class FileBlobWriteStage extends PronghornStage{
                 releaseRead = true;
                 buffA = Pipe.wrappedBlobReadingRingA(input, meta, len);
                 buffB = Pipe.wrappedBlobReadingRingB(input, meta, len);
-                if (!buffB.hasRemaining()) {
+                if (!((Buffer)buffB).hasRemaining()) {
                     buffB = null;
                 }
                 

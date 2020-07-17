@@ -842,7 +842,7 @@ public class GraphManager {
 						maxId = Math.max(maxId, inputs[j].id);
 					}
 				}
-				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)+1); //source +0 then target +1
+				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)+1); //source  then target +1
 				gm.pipeIdToPipe = setValueGrow(gm.pipeIdToPipe, maxId);
 				gm.multInputIds = setValueGrow(gm.multInputIds, gm.topInput+inputs.length);
 			}
@@ -868,7 +868,7 @@ public class GraphManager {
 						maxId = Math.max(maxId, outputs[j].id);
 					}
 				}
-				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)); //source +0 then target +1
+				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)); //source  then target +1
 				gm.pipeIdToPipe = setValueGrow(gm.pipeIdToPipe, maxId);				
 				gm.multOutputIds = setValueGrow(gm.multOutputIds, gm.topOutput+outputs.length);
 			}
@@ -1108,7 +1108,7 @@ public class GraphManager {
 						maxId = Math.max(maxId, outputs[j].id);
 					}
 				}
-				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)); //source +0 then target +1
+				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)); //source  then target +1
 				gm.pipeIdToPipe = setValueGrow(gm.pipeIdToPipe, maxId);				
 				gm.multOutputIds = setValueGrow(gm.multOutputIds, gm.topOutput+outputs.length);
 			}
@@ -1181,7 +1181,7 @@ public class GraphManager {
 						maxId = Math.max(maxId, inputs[j].id);
 					}
 				}
-				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)+1); //source +0 then target +1
+				gm.ringIdToStages = setValueGrow(gm.ringIdToStages, (maxId*2)+1); //source  then target +1
 				gm.pipeIdToPipe = setValueGrow(gm.pipeIdToPipe, maxId);
 				gm.multInputIds = setValueGrow(gm.multInputIds, gm.topInput+inputs.length);
 			}
@@ -1292,7 +1292,7 @@ public class GraphManager {
 			int outputId = output.id;
 			Pipe.structRegistry(output,gm.recordTypeData);
 			try {
-				gm.ringIdToStages = setValue(gm.ringIdToStages, (outputId*2) , stageId, gm.stageIdToStage[stageId]); //source +0 then target +1
+				gm.ringIdToStages = setValue(gm.ringIdToStages, (outputId*2) , stageId, gm.stageIdToStage[stageId]); //source  then target +1
 				gm.pipeIdToPipe = setValue(gm.pipeIdToPipe, outputId, output);				
 				gm.multOutputIds = setValue(gm.multOutputIds, gm.topOutput++, outputId, output);
 			} catch (UnsupportedOperationException uoe) {
@@ -1310,7 +1310,7 @@ public class GraphManager {
 			int inputId = input.id;
 			Pipe.structRegistry(input,gm.recordTypeData);
 			try {
-				gm.ringIdToStages = setValue(gm.ringIdToStages, (inputId*2)+1, stageId, gm.stageIdToStage[stageId]); //source +0 then target +1
+				gm.ringIdToStages = setValue(gm.ringIdToStages, (inputId*2)+1, stageId, gm.stageIdToStage[stageId]); //source  then target +1
 				gm.pipeIdToPipe = setValue(gm.pipeIdToPipe, inputId, input);
 				gm.multInputIds = setValue(gm.multInputIds, gm.topInput++, inputId, input);
 			} catch (UnsupportedOperationException uoe) {

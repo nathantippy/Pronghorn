@@ -498,8 +498,8 @@ public class ServerSocketWriterStage extends PronghornStage {
 		directBuffer.put(writeBuffs[0]);
 		directBuffer.put(writeBuffs[1]);
 				
-		assert(!writeBuffs[0].hasRemaining());
-		assert(!writeBuffs[1].hasRemaining());
+		assert(!((Buffer)writeBuffs[0]).hasRemaining());
+		assert(!((Buffer)writeBuffs[1]).hasRemaining());
 				       		        
 		Pipe.confirmLowLevelRead(pipe, msgSize);		        
 		Pipe.releaseReadLock(pipe);
@@ -561,12 +561,12 @@ public class ServerSocketWriterStage extends PronghornStage {
 		
 		workingBuffers[idx].put(writeBuffs2[0]);
 	
-		if (writeBuffs2[1].hasRemaining()) {
+		if (((Buffer)writeBuffs2[1]).hasRemaining()) {
 			workingBuffers[idx].put(writeBuffs2[1]);
 		}
 		
-		assert(!writeBuffs2[0].hasRemaining());
-		assert(!writeBuffs2[1].hasRemaining());
+		assert(!((Buffer)writeBuffs2[0]).hasRemaining());
+		assert(!((Buffer)writeBuffs2[1]).hasRemaining());
 				        		
 		Pipe.confirmLowLevelRead(pipe, Pipe.sizeOf(NetPayloadSchema.instance, msgIdx));
 		//Pipe.readNextWithoutReleasingReadLock(input[idx]);
@@ -659,7 +659,7 @@ public class ServerSocketWriterStage extends PronghornStage {
 	    	}
 
 	    	
-			if (!source.hasRemaining()) {
+			if (!((Buffer)source).hasRemaining()) {
 				markDoneAndRelease(idx);
 			} else {
 				done = false;
@@ -692,7 +692,7 @@ public class ServerSocketWriterStage extends PronghornStage {
 		buf.flip();
 		int expected = buf.limit();
 						
-		while (buf.hasRemaining()) {
+		while (((Buffer)buf).hasRemaining()) {
 			try {
 				int len = writeToChannel[idx].write(buf);
 				if (len>0) {
@@ -717,7 +717,7 @@ public class ServerSocketWriterStage extends PronghornStage {
 			throw new UnsupportedOperationException();
 		}
 					
-		if (!workingBuffers[idx].hasRemaining()) {
+		if (!((Buffer)workingBuffers[idx]).hasRemaining()) {
 			markDoneAndRelease(idx);
 		} else {
 			done = false;

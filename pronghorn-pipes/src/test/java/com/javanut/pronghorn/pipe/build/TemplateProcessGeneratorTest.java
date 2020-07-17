@@ -16,6 +16,7 @@ import java.util.List;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
+import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import javax.xml.parsers.ParserConfigurationException;
@@ -225,30 +226,35 @@ public class TemplateProcessGeneratorTest {
 
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
                     
-        if (compiler.getTask(null, null, diagnostics, optionList, null, toCompile).call()) {
-            try {
-                File classFile = new File(workingFolder, "com/javanut/pronghorn/pipe/build/"+className+".class");
-                byte[] classData = readClassBytes(classFile);
-                assertTrue(classData.length>0);
-                confirmEndOfBytesLoaded(classData);
-//                Class result =  defineClass(name, classData , 0, classData.length);
-                
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-                fail();
-            }
-
+		if (null!=compiler) {
+			CompilationTask task = compiler.getTask(null, null, diagnostics, optionList, null, toCompile);
+			if (task.call()) {
+	            try {
+	                File classFile = new File(workingFolder, "com/javanut/pronghorn/pipe/build/"+className+".class");
+	                byte[] classData = readClassBytes(classFile);
+	                assertTrue(classData.length>0);
+	                confirmEndOfBytesLoaded(classData);
+	//                Class result =  defineClass(name, classData , 0, classData.length);
+	                
+	            } catch (ClassNotFoundException e) {
+	                e.printStackTrace();
+	                fail();
+	            }
+	
+	        } else {
+	            
+	            try {
+	                reportCompileError(diagnostics.getDiagnostics());
+	            } catch (ClassNotFoundException e) {
+	
+	                System.out.println( target.toString() );
+	                      
+	                e.printStackTrace();
+	                fail();
+	            }                 
+	        }
         } else {
-            
-            try {
-                reportCompileError(diagnostics.getDiagnostics());
-            } catch (ClassNotFoundException e) {
-
-                System.out.println( target.toString() );
-                      
-                e.printStackTrace();
-                fail();
-            }                 
+        	assertTrue(true);// skipping this test because we have no compiler in this JVM.
         }
     }
 

@@ -148,6 +148,18 @@ public abstract class JSONObject<R, T, P> {
         return this;
     }
 
+    public JSONObject<R, T, P> bool(byte[] utf8EncodedName, ToBoolFunction<T> func) {
+        assert(!declaredEmpty);
+        builder.addFieldPrefix(utf8EncodedName).addBool(null, func);
+        return this;
+    }
+
+    public JSONObject<R, T, P> bool(byte[] utf8EncodedName, ToBoolFunction<T> func, JSONType encode) {
+        assert(!declaredEmpty);
+        builder.addFieldPrefix(utf8EncodedName).addBool(null, func, encode);
+        return this;
+    }
+    
     public JSONObject<R, T, P> nullableBool(String name, ToBoolFunction<T> isNull, ToBoolFunction<T> func) {
         assert(!declaredEmpty);
         builder.addFieldPrefix(name).addBool(isNull, func);
@@ -244,6 +256,19 @@ public abstract class JSONObject<R, T, P> {
         return this;
     }
 
+    public JSONObject<R, T, P> nullableString(byte[] utf8EncodedName, ToStringFunction<T> func) {
+        assert(!declaredEmpty);
+        builder.addFieldPrefix(utf8EncodedName).addString(true, func);
+        return this;
+    }
+
+    public JSONObject<R, T, P> nullableString(byte[] utf8EncodedName, ToStringFunction<T> func, JSONType encode) {
+        assert(!declaredEmpty);
+        builder.addFieldPrefix(utf8EncodedName).addString(true, func, encode);
+        return this;
+    }
+    
+    
     // Enum
 
     public <E extends Enum<E>> JSONObject<R, T, P> enumName(String name, ToEnumFunction<T, E> func) {

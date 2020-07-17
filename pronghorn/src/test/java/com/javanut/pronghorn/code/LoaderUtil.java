@@ -96,7 +96,8 @@ public class LoaderUtil {
 
     public static Constructor generateClassConstructor(String packageName, String className, StringBuilder target, Class clazz) throws ClassNotFoundException, NoSuchMethodException {
         
-        return generateClass(packageName, className, target, clazz).getConstructor(GraphManager.class, Pipe.class);
+        Class generateClass = generateClass(packageName, className, target, clazz);
+		return null!=generateClass ? generateClass.getConstructor(GraphManager.class, Pipe.class) : null;
                  
 
     }
@@ -151,33 +152,38 @@ public class LoaderUtil {
         }
     
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
-                    
-        if (compiler.getTask(null, null, diagnostics, optionList, null, toCompile).call()) {
-                File classFile = new File(classesFolder, cannonicalName+".class");
-
-               // System.err.println("write class to :"+ classFile);
-                
-                String name = packageName+"."+className;
-                byte[] classData = readClassBytes(classFile);
-                
-                return new TestClassLoader(name, classData).loadClass(name);
-
-                 
+        if (null != compiler) {             
+	        if (compiler.getTask(null, null, diagnostics, optionList, null, toCompile).call()) {
+	                File classFile = new File(classesFolder, cannonicalName+".class");
+	
+	               // System.err.println("write class to :"+ classFile);
+	                
+	                String name = packageName+"."+className;
+	                byte[] classData = readClassBytes(classFile);
+	                
+	                return new TestClassLoader(name, classData).loadClass(name);
+	
+	                 
+	        } else {
+	            
+	                List<Diagnostic<? extends JavaFileObject>> diagnosticList = diagnostics.getDiagnostics();
+	                Iterator<Diagnostic<? extends JavaFileObject>> iter = diagnosticList.iterator();
+	                while (iter.hasNext()) {
+	                    System.err.println(iter.next());
+	                }
+	                //did not compile due to error
+	                if (!diagnosticList.isEmpty()) {
+	                    throw new ClassNotFoundException(diagnosticList.get(0).toString());
+	                } else {
+	                    throw new ClassNotFoundException("Compiler error");
+	                }
+	                
+	        }
         } else {
-            
-                List<Diagnostic<? extends JavaFileObject>> diagnosticList = diagnostics.getDiagnostics();
-                Iterator<Diagnostic<? extends JavaFileObject>> iter = diagnosticList.iterator();
-                while (iter.hasNext()) {
-                    System.err.println(iter.next());
-                }
-                //did not compile due to error
-                if (!diagnosticList.isEmpty()) {
-                    throw new ClassNotFoundException(diagnosticList.get(0).toString());
-                } else {
-                    throw new ClassNotFoundException("Compiler error");
-                }
-                
+        	return null;
         }
+        
+        
     }
 
     

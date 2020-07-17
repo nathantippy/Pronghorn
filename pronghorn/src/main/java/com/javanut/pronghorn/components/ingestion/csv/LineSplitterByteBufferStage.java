@@ -1,5 +1,6 @@
 package com.javanut.pronghorn.components.ingestion.csv;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
@@ -119,7 +120,7 @@ public class LineSplitterByteBufferStage extends PronghornStage {
 							//When we do smaller more frequent copies the performance drops dramatically. 5X slower.
 							//The copy is an intrinsic and short copies are not as efficient
 							
-							sourceByteBuffer.position(stage.recordStart);
+							((Buffer)sourceByteBuffer).position(stage.recordStart);
 							Pipe outputRing = stage.outputRing;
 							Pipe.confirmLowLevelWrite(stage.outputRing, stage.stepSize);
 							
@@ -160,7 +161,7 @@ public class LineSplitterByteBufferStage extends PronghornStage {
 		    	position ++;						 
 			 
 		 }
-		 sourceByteBuffer.position(position);
+		 ((Buffer)sourceByteBuffer).position(position);
 		 return position;
 	}
 

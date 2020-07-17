@@ -2899,7 +2899,6 @@ public class Pipe<T extends MessageSchema<T>> {
 	}
 	
 	public static int copyBytesFromInputStreamToRing(InputStream source, byte[] target, int targetloc, int targetMask, int length) {
-		new Exception("new untested code").printStackTrace();
 		assert(length<=targetMask);
 		int resultCount = -1;
 		try {			
@@ -4142,7 +4141,6 @@ public class Pipe<T extends MessageSchema<T>> {
     	int idx = (meta>>>31);
     	
     	if (1==idx) {
-    		new Exception("we are not fully done testing this feature").printStackTrace(); 
     		if (null == pipe.blobRingLookup[idx]) {
     			throw new UnsupportedOperationException("no backing data, bad loc value of: "+meta);
     		}

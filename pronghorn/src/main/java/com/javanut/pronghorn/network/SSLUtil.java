@@ -193,10 +193,10 @@ public class SSLUtil {
 		}										
 		targetBuffers[0].put(buffer);
 		((Buffer)buffer).limit(finalLimit);
-		if (buffer.hasRemaining()) {
+		if (((Buffer)buffer).hasRemaining()) {
 			targetBuffers[1].put(buffer);
 		}
-		assert(!buffer.hasRemaining());
+		assert(!((Buffer)buffer).hasRemaining());
 	}
 
 	private static void gatherPipeDataForUnwrap(int maxEncryptedContentLength, ByteBuffer rolling, BaseConnection cc, final ByteBuffer[] targetBuffer, boolean isServer, Pipe<NetPayloadSchema> source) {
@@ -218,8 +218,8 @@ public class SSLUtil {
 			assert(0==inputs[0].remaining());
 		
 		} else {			
-			assert(inputs[0].hasRemaining());
-			assert(inputs[1].hasRemaining());
+			assert(((Buffer)inputs[0]).hasRemaining());
+			assert(((Buffer)inputs[1]).hasRemaining());
 			
 			rolling.put(inputs[0]); 
 			rolling.put(inputs[1]);  
@@ -252,7 +252,7 @@ public class SSLUtil {
 			cc.localRunningBytesProduced += result.bytesProduced();
 			
 		
-		} while(result.getStatus() == Status.OK && sourceBuffer.hasRemaining() && cc.getEngine().getHandshakeStatus()==HandshakeStatus.NOT_HANDSHAKING);
+		} while(result.getStatus() == Status.OK && ((Buffer)sourceBuffer).hasRemaining() && cc.getEngine().getHandshakeStatus()==HandshakeStatus.NOT_HANDSHAKING);
 		return result;
 	}
 
@@ -275,7 +275,7 @@ public class SSLUtil {
 			} else {
 				while (cc.getEngine().getHandshakeStatus() == HandshakeStatus.NEED_UNWRAP 
 			    		  && (result==null || result.getStatus() == Status.OK) 
-			    		  && rolling.hasRemaining()
+			    		  && ((Buffer)rolling).hasRemaining()
 			    		  ) {
 					    ////////////////////////
 					    ///Block needed for openSSL limitation
@@ -301,7 +301,7 @@ public class SSLUtil {
 					
 			}
 		}
-		if (rolling.hasRemaining()) {
+		if (((Buffer)rolling).hasRemaining()) {
 			rolling.compact(); //ready for append
 		} else {
 			((Buffer)rolling).clear();
@@ -312,7 +312,7 @@ public class SSLUtil {
 	
 	private static SSLEngineResult unwrapRollingNominal(ByteBuffer rolling, int maxEncryptedContentLength, final ByteBuffer[] targetBuffer, SSLEngineResult result, BaseConnection cc) throws SSLException {
 
-		while (rolling.hasRemaining()) {
+		while (((Buffer)rolling).hasRemaining()) {
 							
 			    ////////////////////////
 			    ///Block needed for openSSL limitation
@@ -350,7 +350,7 @@ public class SSLUtil {
 		}
 
 		
-		if (rolling.hasRemaining()) {
+		if (((Buffer)rolling).hasRemaining()) {
 			rolling.compact(); //ready for append
 		} else {
 			//logger.info("CLEAR");
@@ -946,7 +946,7 @@ public class SSLUtil {
 				int size = Pipe.addMsgIdx(target, NetPayloadSchema.MSG_PLAIN_210);
 				Pipe.addLongValue(cc.getId(), target); //connection id	
 				Pipe.addLongValue(arrivalTime, target);
-				long releasePosition = rolling.hasRemaining()? 0 : Pipe.tailPosition(source);
+				long releasePosition = ((Buffer)rolling).hasRemaining()? 0 : Pipe.tailPosition(source);
 				Pipe.addLongValue(releasePosition, target); //position
 				
 				int originalBlobPosition =  Pipe.unstoreBlobWorkingHeadPosition(target);

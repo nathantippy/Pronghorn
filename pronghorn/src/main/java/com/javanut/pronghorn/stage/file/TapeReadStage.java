@@ -116,7 +116,7 @@ public class TapeReadStage extends PronghornStage {
                     shutdownInProgress = true;
                     return false;
                 }                
-                if (header.hasRemaining()) {
+                if (((Buffer)header).hasRemaining()) {
                     //try again we did not get all 8 bytes.
                     return false;
                 }

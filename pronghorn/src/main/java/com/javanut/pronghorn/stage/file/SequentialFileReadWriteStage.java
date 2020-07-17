@@ -1,6 +1,7 @@
 package com.javanut.pronghorn.stage.file;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileSystem;
@@ -397,7 +398,7 @@ public class SequentialFileReadWriteStage extends PronghornStage {
 	                releaseRead[idx] = true;
 	                buffA[idx] = Pipe.wrappedBlobReadingRingA(localInput, meta, len);
 	                buffB[idx] = Pipe.wrappedBlobReadingRingB(localInput, meta, len);
-	                if (!buffB[idx].hasRemaining()) {
+	                if (!((Buffer)buffB[idx]).hasRemaining()) {
 	                    buffB[idx] = null;
 	                }
 	                

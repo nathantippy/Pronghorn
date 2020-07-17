@@ -48,7 +48,7 @@ public class MemberHolder {
     public boolean removeMember(int listId, long member) {
         ByteBuffer buff = data[listId];
         ((Buffer)buff).flip();
-        while (buff.hasRemaining()) {
+        while (((Buffer)(buff)).hasRemaining()) {
             int lastPosition = buff.position();            
             if (member == VarLenLong.readLongSigned(buff)) {
                 int newPosition = buff.position();
@@ -94,7 +94,7 @@ public class MemberHolder {
         ByteBuffer buff = data[listId];
         ((Buffer)buff).flip();
         int found = 0;
-        while (buff.hasRemaining()) {
+        while (((Buffer)buff).hasRemaining()) {
             if (member == VarLenLong.readLongSigned(buff)) {
                 found++;
             }
@@ -107,7 +107,7 @@ public class MemberHolder {
 
         ByteBuffer buff = data[listId];
         ((Buffer)buff).flip();
-        while (buff.hasRemaining()) {
+        while (((Buffer)(buff)).hasRemaining()) {
             visitor.visit(VarLenLong.readLongSigned(buff));
         }
         visitor.finished();

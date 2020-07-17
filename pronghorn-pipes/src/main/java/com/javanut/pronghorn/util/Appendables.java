@@ -809,7 +809,7 @@ public class Appendables {
 	        int nextValue = value;
 	        while (bits>4) {            
 	            bits -= 4;
-	            target.append(hBase[nextValue>>>bits]);            
+	            target.append(hBase[0xF&(nextValue>>>bits)]);            
 	            nextValue =  ((1<<bits)-1) & nextValue;
 	        }
 	        bits -= 4;

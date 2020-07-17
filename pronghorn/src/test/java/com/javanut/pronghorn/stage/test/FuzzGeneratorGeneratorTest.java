@@ -181,6 +181,9 @@ public class FuzzGeneratorGeneratorTest {
         try {
             Constructor constructor =  LoaderUtil.generateClassConstructor(ew.getPackageName(), ew.getClassName(), target, FuzzDataStageGenerator.class);
             
+            if (null==constructor) {
+            	return; //do not test, we have no compiler.
+            }
             
             GraphManager gm = new GraphManager();
             
@@ -217,6 +220,10 @@ public class FuzzGeneratorGeneratorTest {
         try {
 
             Class generateClass = LoaderUtil.generateClass(packageName, className, target, FuzzDataStageGenerator.class);
+            if (null==generateClass) {
+            	assertTrue(true);//we have no compiler
+            	return;
+            }
             
             if (generateClass.isAssignableFrom(PronghornStage.class)) {
                 Constructor constructor =  generateClass.getConstructor(GraphManager.class, Pipe.class);

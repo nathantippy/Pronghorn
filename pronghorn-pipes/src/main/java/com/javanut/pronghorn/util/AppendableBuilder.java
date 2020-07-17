@@ -1,8 +1,8 @@
 package com.javanut.pronghorn.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
 import com.javanut.pronghorn.pipe.ChannelReader;
 import com.javanut.pronghorn.pipe.ChannelWriter;
@@ -164,6 +164,34 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 		}
 		return this;
 	}
+
+
+
+    public void consumeAll(InputStream input) throws IOException {
+
+				int maxLen = buffer.length-byteCount;
+				int curPos = byteCount;
+				
+				if (maxLen<8) {
+					growNow(this,byteCount+1024);
+				} 
+				 
+				int len = -1;
+				while ( (len = input.read(buffer, curPos, maxLen)) >= 0 ) {
+		
+					curPos += len;					
+					maxLen -= len;
+					
+					if (maxLen<8) {
+					    growNow(this, byteCount+1024);
+					}
+					
+				}
+			    
+    }
+
+
+
 
 	@Override
 	public void write(byte[] encodedBlock, int pos, int len) {

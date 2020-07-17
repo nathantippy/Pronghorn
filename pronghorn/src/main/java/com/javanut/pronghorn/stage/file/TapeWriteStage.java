@@ -175,37 +175,37 @@ public class TapeWriteStage<T extends MessageSchema<T>> extends PronghornStage {
     private static <S extends MessageSchema<S>> void copyToFile(TapeWriteStage<S> ss) {
         try {
             
-            if (ss.header.hasRemaining()) {
+            if (((Buffer)(ss.header)).hasRemaining()) {
                 ss.fileChannel.write(ss.header);
-                if (ss.header.hasRemaining()) {
+                if (((Buffer)(ss.header)).hasRemaining()) {
                     return;
                 }
             }
             
-            if (ss.blobBuffer1.hasRemaining()) {
+            if (((Buffer)(ss.blobBuffer1)).hasRemaining()) {
                 ss.fileChannel.write(ss.blobBuffer1);
-                if (ss.blobBuffer1.hasRemaining()) {
+                if (((Buffer)(ss.blobBuffer1)).hasRemaining()) {
                     return;
                 }
             }
             
-            if (ss.blobBuffer2.hasRemaining()) {
+            if (((Buffer)(ss.blobBuffer2)).hasRemaining()) {
                 ss.fileChannel.write(ss.blobBuffer2);
-                if (ss.blobBuffer2.hasRemaining()) {
+                if (((Buffer)(ss.blobBuffer2)).hasRemaining()) {
                     return;
                 }
             }
             
-            if (ss.slabBuffer1.hasRemaining()) {
+            if (((Buffer)(ss.slabBuffer1)).hasRemaining()) {
                 fileChannelWrite(ss, ss.slabBuffer1);                
-                if (ss.slabBuffer1.hasRemaining()) {
+                if (((Buffer)(ss.slabBuffer1)).hasRemaining()) {
                     return;
                 }
             }
 
-            if (ss.slabBuffer2.hasRemaining()) {
+            if (((Buffer)(ss.slabBuffer2)).hasRemaining()) {
                 fileChannelWrite(ss, ss.slabBuffer2);                
-                if (ss.slabBuffer2.hasRemaining()) {
+                if (((Buffer)(ss.slabBuffer2)).hasRemaining()) {
                     return;
                 } 
             }

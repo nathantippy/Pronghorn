@@ -480,7 +480,7 @@ public class ClientSocketWriterStage extends PronghornStage {
 						
 						SocketChannel socketChannel = connections[i].getSocketChannel();
 						//required to push large loads.
-						while (mappedByteBuffer.hasRemaining()) {
+						while (((Buffer)mappedByteBuffer).hasRemaining()) {
 							if (socketChannel.write(mappedByteBuffer)<=0) {
 								Thread.yield();//this is also important for large loads
 								break;//can't write now, try later.
@@ -500,7 +500,7 @@ public class ClientSocketWriterStage extends PronghornStage {
 					((Buffer)mappedByteBuffer).clear();
 					return true;
 				}
-				if (!mappedByteBuffer.hasRemaining()) {
+				if (!((Buffer)mappedByteBuffer).hasRemaining()) {
 				
 					//logger.info("write clear {}",i);
 					((Buffer)mappedByteBuffer).clear();
@@ -539,7 +539,7 @@ public class ClientSocketWriterStage extends PronghornStage {
 		buf.flip();
 		int expected = buf.limit();
 		
-		while (buf.hasRemaining()) {
+		while (((Buffer)buf).hasRemaining()) {
 			int len = connections[i].getSocketChannel().write(buf);
 			if (len>0) {
 				expected-=len;

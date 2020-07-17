@@ -1203,7 +1203,7 @@ public class TrieParserReader {
 				if (localCaputuredPos != localAltStack[base+1]) {//part of the same path.
 					break;
 				}
-				if (localSourcePos != localAltStack[base+0]) {//part of the same path.
+				if (localSourcePos != localAltStack[base]) {//part of the same path.
 					break;
 				}
 				if (localRunLength != localAltStack[base+3]){
@@ -1336,7 +1336,7 @@ public class TrieParserReader {
 
 		int base = --altStackPos * fieldsOnStack;
 		
-		reader.localSourcePos     = reader.altStack[base+0];
+		reader.localSourcePos     = reader.altStack[base];
 		reader.capturedPos        = reader.altStack[base+1];
 		int p        	  	      = reader.altStack[base+2];
 		reader.runLength 		  = reader.altStack[base+3];                                
@@ -1565,7 +1565,7 @@ public class TrieParserReader {
 			int sourceMask, short numType, final boolean absentIsZero, final boolean templateLimited, byte sign,
 			long intValue, byte intLength, int dot) {
 		
-		if ((  ('x'!=source[sourceMask & sourcePos+1]) || ('0'!=source[sourceMask & sourcePos+0])) 
+		if ((  ('x'!=source[sourceMask & sourcePos+1]) || ('0'!=source[sourceMask & sourcePos])) 
 			&& 0==(TrieParser.NUMERIC_FLAG_HEX&numType) ) {    
 			return parseBaseTenImpl(reader, source, 
 					sourcePos, sourceLength, sourceMask, absentIsZero, templateLimited,
@@ -1573,7 +1573,7 @@ public class TrieParserReader {
 			
 		} else {
 			return parseBaseHexImpl(reader, source, sourcePos, sourceLength, sourceMask, absentIsZero, templateLimited,
-					sign, intValue, intLength, dot, ('0'!=source[sourceMask & sourcePos+0]) || ('x'!=source[sourceMask & sourcePos+1]));
+					sign, intValue, intLength, dot, ('0'!=source[sourceMask & sourcePos]) || ('x'!=source[sourceMask & sourcePos+1]));
 		}
 
 
