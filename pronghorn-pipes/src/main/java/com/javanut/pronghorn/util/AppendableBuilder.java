@@ -172,19 +172,26 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 				int maxLen = buffer.length-byteCount;
 				int curPos = byteCount;
 				
+				//System.out.println("length: "+maxLen);
 				if (maxLen<8) {
 					growNow(this,byteCount+1024);
 				} 
 				 
 				int len = -1;
 				while ( (len = input.read(buffer, curPos, maxLen)) >= 0 ) {
+					
+					//System.out.println("unknown length:"+len);
 		
 					curPos += len;					
 					maxLen -= len;
-					
+				    byteCount += len;
+				
+				    //System.out.println("length: "+maxLen);	
 					if (maxLen<8) {
 					    growNow(this, byteCount+1024);
 					}
+					
+					
 					
 				}
 			    

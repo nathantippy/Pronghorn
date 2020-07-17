@@ -1,12 +1,18 @@
 package com.javanut.json.encode;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import com.javanut.json.JSONType;
-import com.javanut.json.encode.function.*;
+import com.javanut.json.encode.function.IterBoolFunction;
+import com.javanut.json.encode.function.IterDoubleFunction;
+import com.javanut.json.encode.function.IterEnumFunction;
+import com.javanut.json.encode.function.IterLongFunction;
+import com.javanut.json.encode.function.IterMemberFunction;
+import com.javanut.json.encode.function.IterStringFunction;
+import com.javanut.json.encode.function.IteratorFunction;
+import com.javanut.json.encode.function.ToMemberFunction;
 
 /**
  *
