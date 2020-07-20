@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 import com.javanut.pronghorn.pipe.DataInputBlobReader;
 import com.javanut.pronghorn.pipe.Pipe;
+import com.javanut.pronghorn.util.AppendableBuilder;
+import com.javanut.pronghorn.util.AppendableBuilderReader;
 import com.javanut.pronghorn.util.ByteConsumer;
 import com.javanut.pronghorn.util.TrieParser;
 import com.javanut.pronghorn.util.TrieParserReader;
@@ -185,6 +187,16 @@ public class JSONParser {
 		
 	}
 	
+	public static <A extends Appendable> void parse(AppendableBuilderReader builder, TrieParserReader reader, JSONVisitor visitor) {
+
+		builder.parseSetup(reader);    
+		do {		
+			parseValueToken(reader, visitor);		
+		} while (TrieParserReader.parseHasContent(reader));
+		
+	}
+	
+	
     public static <A extends Appendable> void parse(DataInputBlobReader<?> input, TrieParserReader reader, JSONVisitor visitor) {
 
     	DataInputBlobReader.setupParser(input, reader);
@@ -194,7 +206,7 @@ public class JSONParser {
 		} while (TrieParserReader.parseHasContent(reader));
 		
 	}
-	
+    	
 	public static void parse(ByteBuffer byteBuffer, TrieParserReader reader, JSONVisitor visitor) {
 		
 		TrieParserReader.parseSetup(reader, byteBuffer.array(), byteBuffer.position(),  byteBuffer.remaining(), Integer.MAX_VALUE);

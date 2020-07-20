@@ -39,6 +39,32 @@ public class JSONParserTest {
 		
 		assertEquals("{key:value}",target.toString());
 	}
+	
+	
+	@Test
+	public void nominalTest() {
+				
+		//String json = " { \"key\" : \"value\" }  ";
+		String json = "{\"name\":\"Nathan Tippy\",\"product\":\"terra-architect-basic\",\"email\":\"nathantippy@gmail.com\",\"company\":\"KMF Enterprises LLC\",\"installs\":0,\"licenceAgreed\":false,\"copyrightAgreed\":false}";
+		
+		
+		Pipe pipe = buildPopulatedPipe(json);
+			
+		
+		TrieParserReader reader = JSONParser.newReader();
+		StringBuilder target = new StringBuilder();
+		JSONVisitor visitor = new JSONVisitorCapture(target);
+		
+		
+		int msgIdx = Pipe.takeMsgIdx(pipe);
+		JSONParser.parse(pipe, reader, visitor );
+		
+		System.out.println(target.toString());
+		assertEquals(
+		"{name:Nathan Tippy,product:terra-architect-basic,email:nathantippy@gmail.com,company:KMF Enterprises LLC,installs:0,licenceAgreed:false,copyrightAgreed:false}"
+		,target.toString());
+	}
+	
 
 	@Test
 	public void complexTest() {

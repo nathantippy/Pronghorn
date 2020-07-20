@@ -111,10 +111,10 @@ public class JSONVisitorCapture<A extends Appendable> implements JSONVisitor {
 
 	@Override
 	public void booleanValue(boolean b) {
-		System.err.println("boolean "+b);
+		//works, tested, System.err.println("boolean "+b);
 		
 		try {
-			target.append("boolean ");
+			//target.append("boolean ");
 			target.append(Boolean.toString(b));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
