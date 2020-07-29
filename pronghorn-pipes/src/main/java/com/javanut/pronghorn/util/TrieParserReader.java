@@ -1026,8 +1026,14 @@ public class TrieParserReader {
 			? p+3 
 			: p+3+((((int)localData[p+1])<<15) | (0x7FFF&localData[p+2]));			
 						
-		reader.type = localData[p++];
-		reader.pos = p;
+		
+		if (p<localData.length) {
+			reader.type = localData[p++];
+			reader.pos = p;
+		} else {			
+			reader.normalExit = false;
+			reader.result = reader.unfoundConstant;
+		}
 	}
 
 

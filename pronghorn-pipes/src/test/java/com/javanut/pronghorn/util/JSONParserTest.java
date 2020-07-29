@@ -17,6 +17,7 @@ import com.javanut.pronghorn.util.parse.JSONStreamParser;
 import com.javanut.pronghorn.util.parse.JSONStreamVisitor;
 import com.javanut.pronghorn.util.parse.JSONStreamVisitorCapture;
 import com.javanut.pronghorn.util.parse.JSONVisitor;
+import com.javanut.pronghorn.util.parse.JSONVisitorAdapter;
 import com.javanut.pronghorn.util.parse.JSONVisitorCapture;
 
 public class JSONParserTest {
@@ -64,6 +65,43 @@ public class JSONParserTest {
 		"{name:Nathan Tippy,product:terra-architect-basic,email:nathantippy@gmail.com,company:KMF Enterprises LLC,installs:0,licenceAgreed:false,copyrightAgreed:false}"
 		,target.toString());
 	}
+	
+	@Test
+	public void adapterTest() {
+				
+		//String json = " { \"key\" : \"value\" }  ";
+		String json = "{\"meta\":{\"item\":\"car\" }, \"det\":[{\"item\":\"g\"},{\"item\":\"h\"}],    \"name\":\"Nathan Tippy\",\"product\":\"terra-architect-basic\",\"email\":\"nathantippy@gmail.com\",\"company\":\"KMF Enterprises LLC\",\"installs\":0,\"licenceAgreed\":false,\"copyrightAgreed\":false}";
+		
+		
+		Pipe pipe = buildPopulatedPipe(json);
+			
+		
+		TrieParserReader reader = JSONParser.newReader();
+		
+		final StringBuilder target = new StringBuilder();
+		
+		JSONVisitorAdapter adapter = new JSONVisitorAdapter() {
+
+			@Override
+			protected void stringData(byte[] data, int len) {
+				target.append(path()).append("\n");
+			}
+			
+			
+		};
+		
+		
+		int msgIdx = Pipe.takeMsgIdx(pipe);
+		JSONParser.parse(pipe, reader, adapter );
+		
+		assertTrue(target.indexOf(".det[0].item")>0);
+		
+		//System.out.println(target.toString());
+		//assertEquals(
+		//"{name:Nathan Tippy,product:terra-architect-basic,email:nathantippy@gmail.com,company:KMF Enterprises LLC,installs:0,licenceAgreed:false,copyrightAgreed:false}"
+		//,target.toString());
+	}
+	
 	
 
 	@Test

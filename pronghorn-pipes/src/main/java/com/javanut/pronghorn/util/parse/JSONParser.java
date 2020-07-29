@@ -303,9 +303,8 @@ public class JSONParser {
         	}
         } else {
         	if (NUMBER_ID == tokenId) {        		
-        		long m = TrieParserReader.capturedDecimalMField(reader, 0);
-        		byte e = TrieParserReader.capturedDecimalEField(reader, 0);
-        		visitor.numberValue(m,e);        		        		
+        		visitor.numberValue(TrieParserReader.capturedDecimalMField(reader, 0),
+        				            TrieParserReader.capturedDecimalEField(reader, 0));        		        		
         	} else {        		
         		if (NULL_ID == tokenId) {
         			visitor.nullValue();

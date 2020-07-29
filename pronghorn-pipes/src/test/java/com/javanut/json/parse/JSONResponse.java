@@ -14,7 +14,7 @@ public class JSONResponse {
     private final StringBuilder body = new StringBuilder();
 
     private static final JSONRenderer<JSONResponse> jsonRenderer = new JSONRenderer<JSONResponse>()
-            .beginObject()
+            .startObject()
             .integer("status", o->o.status)
             .string("message", (o,t)-> t.append(o.message))
             .string("body", (o,t)->t.append(o.body))

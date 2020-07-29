@@ -42,17 +42,17 @@ public abstract class JSONRoot<R, T, P> {
         return rootEnded();
     }
 
-    // Object
-
-    @Deprecated //use startObject
-    public JSONObject<R, T, P> beginObject() {
-        return startObject();
-    }
-    
-    @Deprecated //use startObject
-    public <M> JSONObject<R, M, P> beginObject(ToMemberFunction<T, M> accessor) {
-        return startObject(accessor);
-    }
+//    // Object
+//
+//    @Deprecated //use startObject
+//    public JSONObject<R, T, P> beginObject() {
+//        return startObject();
+//    }
+//    
+//    @Deprecated //use startObject
+//    public <M> JSONObject<R, M, P> beginObject(ToMemberFunction<T, M> accessor) {
+//        return startObject(accessor);
+//    }
     
     public JSONObject<R, T, P> startObject() {
     	return startObject(passThoughMember);

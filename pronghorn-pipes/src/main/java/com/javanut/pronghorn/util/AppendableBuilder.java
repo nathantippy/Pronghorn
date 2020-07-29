@@ -175,6 +175,7 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 				//System.out.println("length: "+maxLen);
 				if (maxLen<8) {
 					growNow(this,byteCount+1024);
+					maxLen = buffer.length-byteCount;
 				} 
 				 
 				int len = -1;
@@ -189,6 +190,7 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 				    //System.out.println("length: "+maxLen);	
 					if (maxLen<8) {
 					    growNow(this, byteCount+1024);
+					    maxLen = buffer.length-byteCount;
 					}
 					
 					
