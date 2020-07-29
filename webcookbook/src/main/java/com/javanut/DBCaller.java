@@ -181,7 +181,7 @@ public class DBCaller extends Blockable<HTTPRequestSchema,ServerResponseSchema,S
     
    
 	private static final JSONRenderer<ResultSet> jsonRenderer = new JSONRenderer<ResultSet>()
-			  .beginObject()
+			  .startObject()
 			  .integer("id", r->{
 						try {
 							return r.getInt("id");

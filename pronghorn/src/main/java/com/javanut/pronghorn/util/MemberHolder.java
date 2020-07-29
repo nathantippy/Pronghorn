@@ -94,7 +94,7 @@ public class MemberHolder {
         ByteBuffer buff = data[listId];
         ((Buffer)buff).flip();
         int found = 0;
-        while (((Buffer)buff).hasRemaining()) {
+        while ((buff).remaining()>0) {
             if (member == VarLenLong.readLongSigned(buff)) {
                 found++;
             }
@@ -107,7 +107,7 @@ public class MemberHolder {
 
         ByteBuffer buff = data[listId];
         ((Buffer)buff).flip();
-        while (((Buffer)(buff)).hasRemaining()) {
+        while ((buff).remaining()>0) {
             visitor.visit(VarLenLong.readLongSigned(buff));
         }
         visitor.finished();
