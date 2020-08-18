@@ -931,12 +931,12 @@ public class TrieParserReader {
 									  final byte caseMask, final int t1, final int t2, final short[] data, int t11, int t21, int r) {
 		
 		if (t11+r < data.length) {
-			final int secondMask = caseMask & 0xFF;
+			final int eightBitMask = caseMask & 0xFF;
 			//int total = 0;
 			while (--r >= 0) {
 				
 				//repeating this if is probably a bad idea lets do a logic approach instead
-				if ((caseMask & data[t11++]) != (secondMask & source[srcMask & (t21++)]) ) {
+				if ((eightBitMask & data[t11++]) != (eightBitMask & source[srcMask & (t21++)]) ) {
 					return false;
 				}				
 				
