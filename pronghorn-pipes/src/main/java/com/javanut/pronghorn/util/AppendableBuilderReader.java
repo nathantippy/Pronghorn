@@ -15,9 +15,16 @@ public class AppendableBuilderReader {
 	public AppendableBuilderReader() {
 	}
 
-	public void setData(byte[] buffer, int byteCount) {
+	public void setData(AppendableBuilderReader source) {
+		this.buffer = source.buffer;
+		this.byteCount = source.byteCount;
+	}
+	
+	void setData(byte[] buffer, int byteCount) {
+			
 		this.buffer = buffer;
 		this.byteCount = byteCount;
+		
 	}
 	
 	public String toString() {
@@ -28,7 +35,12 @@ public class AppendableBuilderReader {
 		return byteCount;
 	}
 	
+	public void clear() {
+		byteCount = 0;
+	}
+	
 	public void parseSetup(TrieParserReader reader) {
+		
 		TrieParserReader.parseSetup(reader, buffer, 0, byteCount, buffer.length-1);
 	}
 	

@@ -929,14 +929,14 @@ public class TrieParserReader {
 
 	private static boolean scanBytes3(final TrieParserReader reader, final byte[] source, final int srcMask,
 									  final byte caseMask, final int t1, final int t2, final short[] data, int t11, int t21, int r) {
-		
+		//assert((1&srcMask) == 1);//this mask is all 1's and must be at least 1
 		if (t11+r < data.length) {
 			final int eightBitMask = caseMask & 0xFF;
 			//int total = 0;
 			while (--r >= 0) {
 				
 				//repeating this if is probably a bad idea lets do a logic approach instead
-				if ((eightBitMask & data[t11++]) != (eightBitMask & source[srcMask & (t21++)]) ) {
+				if ((caseMask & data[t11++]) != (eightBitMask & source[srcMask & (t21++)]) ) {
 					return false;
 				}				
 				
