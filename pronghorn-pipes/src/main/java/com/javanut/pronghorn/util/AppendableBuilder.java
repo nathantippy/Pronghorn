@@ -12,7 +12,7 @@ import com.javanut.pronghorn.pipe.Pipe;
 public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder> {
 
 	private int maximumAllocation;
-	private static final int defaultSize = 1<<15; //must be power of 2
+	private static final int defaultSize = 1<<14; //must be power of 2
 	
     private byte[] buffer;	
 	private int byteCount;

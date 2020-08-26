@@ -451,7 +451,7 @@ public class ServerSocketBulkRouterStage extends PronghornStage {
 			Pipe.confirmLowLevelRead(a, Pipe.sizeOf(ReleaseSchema.instance, ReleaseSchema.MSG_RELEASEWITHSEQ_101));
 
 		} else if (msgIdx == ReleaseSchema.MSG_RELEASE_100) {
-			System.out.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		
 			releaseIfUnused(msgIdx, Pipe.takeLong(a), Pipe.takeLong(a), -1, -1);
 			Pipe.confirmLowLevelRead(a, Pipe.sizeOf(ReleaseSchema.instance, ReleaseSchema.MSG_RELEASE_100));
   

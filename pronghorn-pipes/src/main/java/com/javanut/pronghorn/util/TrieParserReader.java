@@ -618,14 +618,17 @@ public class TrieParserReader {
 	//if this equals we move forward, if not we leave it
 	public static boolean positionEquals(TrieParserReader reader, byte[] value) {
 		
-		if (!Pipe.isEqual(value, 0, Integer.MAX_VALUE,
-				            reader.sourceBacking, reader.sourcePos, reader.sourceMask, value.length)) {
-			return false;			
-		} else {
-			reader.sourcePos += value.length;
-			reader.sourceLen -= value.length;
-			return true;
+		if (null != value) {
+			if (!Pipe.isEqual(value, 0, Integer.MAX_VALUE,
+					            reader.sourceBacking, reader.sourcePos, reader.sourceMask, value.length)) {
+				return false;			
+			} else {
+				reader.sourcePos += value.length;
+				reader.sourceLen -= value.length;
+				return true;
+			}
 		}
+		return false;
 		
 	}
 
@@ -1403,9 +1406,9 @@ public class TrieParserReader {
 
 	private static int parseBytesApply(TrieParserReader reader, final int sourcePos, final int sourceMask,
 			final short stopValue, int x, int lim) {
-		//final boolean hasStopValue = 0!=stopValue;
-		if (!((lim<=0) && /*hasStopValue*/   0!=stopValue   )) { 
-			
+		
+		if ( ( (lim>0) || (0==stopValue) ) ) { 
+		
 			final int x1 = x+Branchless.ifZero(stopValue, 1, 0);
 			//final int x1 = hasStopValue ? x : x+1;
 			
@@ -1416,7 +1419,6 @@ public class TrieParserReader {
 					reader.capturedValues, 
 					reader.capturedPos, 
 					sourcePos, len, sourceMask); 
-			
 			return x1;//if no stop value add 1 more since stop is subtracted			
 		} else {
 			//a zero stop value is a rule to caputure evertything up to the end of the data.
@@ -1639,7 +1641,7 @@ public class TrieParserReader {
 
 		do {
 
-			if (intLength < sourceLength) {
+			if (intLength <= sourceLength) {
 				final short c = source[sourceMask & sourcePos++];        
 
 				if ((c>='0') && (c<='9') ) {
@@ -1650,6 +1652,7 @@ public class TrieParserReader {
 					break;//next char is not valid.
 				}
 			} else {
+				
 				if (reader.alwaysCompletePayloads || templateLimited) {
 					break;
 				} else {
@@ -1663,9 +1666,13 @@ public class TrieParserReader {
 
 	private static int parseBaseFinish(TrieParserReader reader, int sourcePos, final boolean absentIsZero, byte sign,
 			long intValue, byte intLength, int dot, byte base) {
+		
 		if (intLength==0 && !absentIsZero) {
 			return reader.alwaysCompletePayloads ? -1 : -2;
 		}
+		
+		System.out.println("publish: "+intValue);
+
 		publish(reader, sign, intValue, intLength, base, dot);
 		return sourcePos-1;
 	}

@@ -184,6 +184,63 @@ public class TrieParserTest {
 		
 	}
 	
+	@Test
+	public void testSimpleNumber() {
+		
+		AppendableBuilder ab = new AppendableBuilder();
+		ab.append(">= 1.2.3-alpha, <4.5.6-beta");
+		
+		AppendableBuilderReader r = ab.reader();
+		
+		TrieParserReader reader = new TrieParserReader(true);
+		r.parseSetup(reader);
+		
+		TrieParser parser = new TrieParser(16);
+		parser.setUTF8Value(" ",  1);
+		parser.setUTF8Value("=",  2);
+		parser.setUTF8Value("!=", 3);
+		parser.setUTF8Value(">",  4);
+		parser.setUTF8Value(">=", 5);
+		parser.setUTF8Value("<",  6);
+		parser.setUTF8Value("<=", 7);
+		parser.setUTF8Value("~>", 8);
+		parser.setUTF8Value(",",  9);
+		
+		
+		parser.setUTF8Value(",",  20);
+		//parser.setUTF8Value(".",  21);
+		
+		parser.setUTF8Value("%u-%b", 33);
+		parser.setUTF8Value("%u", 11);
+		parser.setUTF8Value("%u.", 12);
+		parser.setUTF8Value("%u-%b,", 32);
+		parser.setUTF8Value("%u-%b ", 31);
+		
+	//	parser.setUTF8Value("-%b,", 31);
+	//	parser.setUTF8Value("-%b ", 32);
+		//parser.setUTF8Value("-%b",  33);
+		
+//		parser.setUTF8Value("%u.",    10);
+//		parser.setUTF8Value("-%b,", 13);
+//		parser.setUTF8Value("-%b ", 14);
+//		parser.setUTF8Value("%U",     11); 
+		
+		assertEquals(5,reader.parseNext(parser));
+		assertEquals(1,reader.parseNext(parser));
+		assertEquals(12,reader.parseNext(parser));
+		assertEquals(12,reader.parseNext(parser));
+		assertEquals(32,reader.parseNext(parser));
+		assertEquals(1,reader.parseNext(parser));
+		assertEquals(6,reader.parseNext(parser));
+		assertEquals(12,reader.parseNext(parser));
+		assertEquals(12,reader.parseNext(parser));
+	//	assertEquals(33,reader.parseNext(parser));  //odd issue still to resolve
+	//	assertEquals(123,TrieParserReader.capturedLongField(reader, 0));
+		
+		
+	}
+	
+	
 	@Test // ******
 	// captured val: whatever is in wild card.
 	public void testwriteCapturedValuesToAppendable() throws IOException {
@@ -1642,7 +1699,7 @@ public class TrieParserTest {
 		assertFalse(map.toString(), map.toString().contains("ERROR"));
 
 		byte[] text0 = "/unfollow?user=12345".getBytes();
-		assertEquals(35, TrieParserReader.query(reader, map, wrapping(text0, 6), 0, text0.length, 63));
+		assertEquals(23, TrieParserReader.query(reader, map, wrapping(text0, 6), 0, text0.length, 63));
 
 	}
 
