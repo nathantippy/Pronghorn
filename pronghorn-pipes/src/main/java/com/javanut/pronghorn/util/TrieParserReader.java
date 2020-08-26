@@ -1671,8 +1671,6 @@ public class TrieParserReader {
 			return reader.alwaysCompletePayloads ? -1 : -2;
 		}
 		
-		System.out.println("publish: "+intValue);
-
 		publish(reader, sign, intValue, intLength, base, dot);
 		return sourcePos-1;
 	}
