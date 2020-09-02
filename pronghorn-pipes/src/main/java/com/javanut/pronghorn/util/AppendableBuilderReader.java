@@ -48,8 +48,14 @@ public class AppendableBuilderReader {
 		parser.setValue(buffer, 0, byteCount, Integer.MAX_VALUE, value);
 	}
 	
-	public boolean startsWith(byte[] prefix) {		
-		int x = prefix.length;
+	
+	public boolean startsWith(byte[] prefix) {
+		return startsWith(prefix,prefix.length);
+	}
+	
+	//starts with only the first len bytes of prefix
+	public boolean startsWith(byte[] prefix, int len) {		
+		int x = len;
 		if (x <= byteCount) {
 			while (--x >= 0) {
 				if (prefix[x] != buffer[x]) {
