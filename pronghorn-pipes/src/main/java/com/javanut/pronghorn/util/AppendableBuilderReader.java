@@ -40,9 +40,19 @@ public class AppendableBuilderReader {
 	}
 	
 	public void parseSetup(TrieParserReader reader) {
-		
 		TrieParserReader.parseSetup(reader, buffer, 0, byteCount, buffer.length-1);
 	}
+	
+	public long lookupExactMatch(TrieParserReader reader, TrieParser parser) {
+		
+		parseSetup(reader);
+		final long id = (long)reader.parseNext(parser);
+		if (!TrieParserReader.parseHasContent(reader)) {
+			return id;
+		}
+		return -1;
+	}
+	
 	
 	public void addToTrieParser(TrieParser parser, long value) {
 		parser.setValue(buffer, 0, byteCount, Integer.MAX_VALUE, value);
