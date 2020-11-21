@@ -206,11 +206,7 @@ public abstract class BaseConnection {
 		return previousPoolReservation;
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		close();
-	}
-	
+
 	//overwritten by leaf which has the headers
 	public boolean hasHeadersToEcho() {
 		return true;

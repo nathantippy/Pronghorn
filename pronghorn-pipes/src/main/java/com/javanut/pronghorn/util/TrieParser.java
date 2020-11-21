@@ -445,7 +445,7 @@ public class TrieParser implements Serializable {
         int s = SIZE_OF_RESULT;
         long result = 0;
         while (--s >= 0) {
-        	result = (result<<8) | ((long)data[i++]);
+        	result = (result<<16) | (0xFFFF&(long)data[i++]);
         } 
         pv.visit(buffer, bufferPosition, result);
         visitPatterns(pv,i,buffer,bufferPosition);
