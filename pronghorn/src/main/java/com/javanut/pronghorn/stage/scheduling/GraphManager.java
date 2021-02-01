@@ -2405,8 +2405,8 @@ public class GraphManager {
 		
 		int key = (Pipe.totalPipes()*consumer)+pipe.id;
 		
-		if (null==m.cacheLCP) {
-			m.cacheLCP = new int[m.stageCounter.get()*Pipe.totalPipes()];
+		if (null==m.cacheLCP || key>=m.cacheLCP.length) {
+			m.cacheLCP = new int[Math.max(m.stageCounter.get()*Pipe.totalPipes(),key+1)];
 			Arrays.fill(m.cacheLCP, -3);
 		}
 		
@@ -2443,8 +2443,8 @@ public class GraphManager {
 	private static int lastIdForProdPipe(GraphManager m, Pipe pipe, int producer) {
 		int key = (Pipe.totalPipes()*producer)+pipe.id;
 		
-		if (null==m.cacheLPP) {
-			m.cacheLPP = new int[m.stageCounter.get()*Pipe.totalPipes()];
+		if (null==m.cacheLPP || key>=m.cacheLPP.length) {
+			m.cacheLPP = new int[Math.max(m.stageCounter.get()*Pipe.totalPipes(),key+1)];
 			Arrays.fill(m.cacheLPP, -3);
 		}
 		
@@ -3106,16 +3106,6 @@ public class GraphManager {
                 isStarted &= isStageStarted(gm, stages[s].stageId);
             }
         } while (!isStarted);
-    }
-
-    @Deprecated
-    public static void blockUntilStageBeginsShutdown(GraphManager gm, PronghornStage stageToWatch) {
-        blockUntilStageTerminated(gm, stageToWatch);
-    }
-   
-	@Deprecated
-    public static boolean blockUntilStageBeginsShutdown(GraphManager gm, PronghornStage stageToWatch, long timeoutMS) {
-       return blockUntilStageTerminated(gm, stageToWatch, timeoutMS);
     }
 
     public static void blockUntilStageTerminated(GraphManager gm, PronghornStage stageToWatch) {

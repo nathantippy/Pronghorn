@@ -519,7 +519,7 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
 
     @Override
     public int read() {
-        return (byteMask & position) != bytesHighBound ? backing[byteMask & position++] : EOF_MARKER;//isOpen?0:-1;
+        return (byteMask & position) != bytesHighBound ? (0xFF)&backing[byteMask & position++] : EOF_MARKER;//isOpen?0:-1;
     }
 
     @Override

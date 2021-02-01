@@ -23,6 +23,16 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 		this(Integer.MAX_VALUE);
 	}
 	
+	public AppendableBuilder(InputStream input) {
+		this(Integer.MAX_VALUE);
+		try {
+			consumeAll(input);
+			input.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	//This class is allowed to grow but only up to the maximumAllocation
 	public AppendableBuilder(int maximumAllocation) {
 		
@@ -44,6 +54,10 @@ public class AppendableBuilder implements AppendableByteWriter<AppendableBuilder
 			abir.setData(buffer, byteCount);
 			return abir;
 		}
+	}
+	
+	public void parseSetup(TrieParserReader reader) {
+		TrieParserReader.parseSetup(reader, buffer, 0, byteCount, buffer.length-1);
 	}
 
 	public String toString() {

@@ -24,7 +24,7 @@ public class ExtractValuesFromFile {
 		StageScheduler s = StageScheduler.defaultScheduler(gm);
 		s.startup();
 		
-		GraphManager.blockUntilStageBeginsShutdown(gm, done);
+		GraphManager.blockUntilStageTerminated(gm, done);
 
 		
 	}

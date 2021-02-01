@@ -96,7 +96,7 @@ public class OrderSupervisorTest {
 		System.setErr(new PrintStream(baost));
 	
 		scheduler.startup();
-		GraphManager.blockUntilStageBeginsShutdown(gm, watch);
+		GraphManager.blockUntilStageTerminated(gm, watch);
 		
 		scheduler.shutdown();
 		
@@ -165,7 +165,7 @@ public class OrderSupervisorTest {
 		
 		scheduler.startup();
 		
-		GraphManager.blockUntilStageBeginsShutdown(gm, watch);
+		GraphManager.blockUntilStageTerminated(gm, watch);
 			
 		scheduler.shutdown();
 		

@@ -95,7 +95,7 @@ public class MatrixComputeTest {
 			
 		i = schema.getColumns();
 		while (--i>=0) {
-			GraphManager.blockUntilStageBeginsShutdown(gm, watch[i], 500);//timeout in ms
+			GraphManager.blockUntilStageTerminated(gm, watch[i], (long) 500);//timeout in ms
 		}
 		
 		scheduler.awaitTermination(2, TimeUnit.SECONDS);
@@ -161,7 +161,7 @@ public class MatrixComputeTest {
 			
 		}
 		
-		GraphManager.blockUntilStageBeginsShutdown(gm, watch, 500);
+		GraphManager.blockUntilStageTerminated(gm, watch, (long) 500);
 		
 		String actualText = new String(capture.toByteArray());
 		//System.out.println(actualText);
@@ -301,7 +301,7 @@ public class MatrixComputeTest {
 			Pipe.publishEOF(left);
 			Pipe.publishEOF(right);
 		}
-		GraphManager.blockUntilStageBeginsShutdown(gm, watch, 500);//timeout in ms
+		GraphManager.blockUntilStageTerminated(gm, watch, (long) 500);//timeout in ms
 		
 
 		scheduler.awaitTermination(20, TimeUnit.SECONDS);
@@ -445,7 +445,7 @@ public class MatrixComputeTest {
 		Pipe.publishEOF(left);
 		Pipe.publishEOF(right);
 				
-		GraphManager.blockUntilStageBeginsShutdown(gm, watch, 500);//timeout in ms
+		GraphManager.blockUntilStageTerminated(gm, watch, (long) 500);//timeout in ms
 		
 
 		scheduler.awaitTermination(2000, TimeUnit.SECONDS);

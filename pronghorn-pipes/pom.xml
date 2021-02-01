@@ -3,7 +3,7 @@
   <groupId>com.javanut</groupId>
   <artifactId>pronghorn-pipes</artifactId>
   <name>pronghorn-pipes</name>
-  <version>1.1.24</version>
+  <version>1.1.25</version>
    
     <description>Ring buffer based queuing utility for applications that require high performance and/or a small
         footprint. Well suited for embedded and stream based processing.

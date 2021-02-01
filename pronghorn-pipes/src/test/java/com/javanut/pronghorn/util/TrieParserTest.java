@@ -362,7 +362,7 @@ public class TrieParserTest {
 		Pipe.releaseReadLock(pipe);
 
 		assertEquals(l1, 375);
-		assertEquals(b1, -2);
+		assertEquals(b1, 254);
 	}
 
 	@Test

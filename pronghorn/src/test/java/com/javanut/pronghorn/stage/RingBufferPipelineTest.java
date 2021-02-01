@@ -526,7 +526,7 @@ public class RingBufferPipelineTest {
 		 
 		 
 		 //blocks until all the submitted 
-		 GraphManager.blockUntilStageBeginsShutdown(gm, productionStage, TIMEOUT_SECONDS*1000);
+		 GraphManager.blockUntilStageTerminated(gm, productionStage, (long) (TIMEOUT_SECONDS*1000));
 		 //while (Pipe.contentRemaining(inputRing)>0){}; //wait til empty??
 		 
 		 scheduler.shutdown();

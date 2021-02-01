@@ -4,7 +4,7 @@
   <groupId>com.javanut</groupId>
   <artifactId>webcookbook</artifactId>
   <name>webcookbook</name>
-  <version>1.1.3</version>
+  <version>1.1.25</version>
   <description>Example project of the web components of pronghorn</description>
   <url>https://github.com/oci-pronghorn/WebCookBook</url>
   <developers>
@@ -203,10 +203,10 @@
     </dependency>
   </dependencies>
   <properties>
-    <java.bootstrap.classes>${java.home}/lib/rt.jar</java.bootstrap.classes>
     <java.secure.socket.extension.classes>${java.home}/lib/jsse.jar</java.secure.socket.extension.classes>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.bootstrap.classes>${java.home}/lib/rt.jar</java.bootstrap.classes>
     <java.cryptographic.extension.classes>${java.home}/lib/jce.jar</java.cryptographic.extension.classes>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>
 
