@@ -32,9 +32,15 @@ public class LZMADecompressStage extends PronghornStage{
 		
 	}
 
+	private long start = System.currentTimeMillis();
+	
 	@Override
 	public void run() {
-	
+				
+		if (System.currentTimeMillis()-start > 25L*1000L) {
+			System.out.println("running: "+this);
+		}
+		
 		while (Pipe.hasRoomForWrite(output) && Pipe.hasContentToRead(input)) {
 			int idx = Pipe.takeMsgIdx(input);
 			if (idx<0) {
