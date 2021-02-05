@@ -675,6 +675,7 @@ public class GraphManager {
 	            if (null!=pipe) {
 	                byte[] pipeName = gm.pipeDOTSchemaNames[pipe.id];
 	                if (null==pipeName) {//keep so this is not built again upon every call
+	                	
 	                	String temp = Pipe.schemaName(pipe).replace("Schema", "");
 	                	gm.pipeDOTSchemaNames[pipe.id] = temp.getBytes();
 	                }

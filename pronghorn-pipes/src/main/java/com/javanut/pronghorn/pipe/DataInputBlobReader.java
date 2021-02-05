@@ -708,6 +708,7 @@ public class DataInputBlobReader<S extends MessageSchema<S>> extends ChannelRead
     	position += length;
     	
     }    
+          
     
     public <T extends MessageSchema<T>> void readInto(DataOutputBlobWriter<T> writer, int length) {
     	

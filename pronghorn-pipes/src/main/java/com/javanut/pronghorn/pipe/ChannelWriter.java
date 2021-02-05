@@ -1,6 +1,7 @@
 package com.javanut.pronghorn.pipe;
 
 import java.io.Externalizable;
+import java.io.InputStream;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
 
@@ -234,4 +235,8 @@ public abstract class ChannelWriter extends OutputStream implements ObjectOutput
 	  */
 	 abstract public void write(ChannelReader readPayload);
 		
+	 
+	 abstract public int writeStream(InputStream inputStream, int maxLen);
+
+	 abstract public int writeStream(InputStream inputStream);
 }

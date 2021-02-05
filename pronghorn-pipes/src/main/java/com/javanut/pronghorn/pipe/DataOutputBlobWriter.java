@@ -583,12 +583,14 @@ public class DataOutputBlobWriter<S extends MessageSchema<S>> extends ChannelWri
     	that.activePosition += DataInputBlobReader.read(input, that.byteBuffer, that.activePosition, length, that.byteMask);
     }
    
+    @Override
 	public int writeStream(InputStream inputStream, int maxLen) {	
         int copyBytesFromInputStreamToRing = Pipe.copyBytesFromInputStreamToRing(inputStream, byteBuffer, activePosition, byteMask, maxLen);
 		activePosition+=copyBytesFromInputStreamToRing;
 		return copyBytesFromInputStreamToRing;
 	}
 
+    @Override
 	public int writeStream(InputStream inputStream) {		
 		int copyBytesFromInputStreamToRing = Pipe.copyBytesFromInputStreamToRing(inputStream, byteBuffer, activePosition, byteMask, this.remaining());
 		activePosition+=copyBytesFromInputStreamToRing;

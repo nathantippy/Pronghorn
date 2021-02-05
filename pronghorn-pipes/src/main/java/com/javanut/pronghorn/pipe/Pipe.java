@@ -1821,6 +1821,7 @@ public class Pipe<T extends MessageSchema<T>> {
 
     private static void copyFieldToOutputStream(OutputStream out, int length, byte[] backing, int off, int lenFromOffsetToEnd)
             throws IOException {
+    	//TODO: duplicate this as a featur of the ChannelReader
         if (lenFromOffsetToEnd>=length) {
             //simple add bytes
             out.write(backing, off, length); 
