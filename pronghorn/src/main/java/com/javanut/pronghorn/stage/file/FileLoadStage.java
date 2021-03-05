@@ -67,8 +67,9 @@ public class FileLoadStage extends PronghornStage {
 			File target = new File(sourceFolder, subPath);
 			InputStream inputStream = new FileInputStream(target);
 			DataOutputBlobWriter<RawDataSchema> outputStream = Pipe.openOutputStream(output);
-			int len = outputStream.writeStream(inputStream, (int)target.length());
-			assert(len == target.length()) : "did not fully read file";
+			int goal = (int)target.length();
+			int len = outputStream.writeStream(inputStream, goal);
+			assert(len == goal) : "did not fully read file";
 			DataOutputBlobWriter.closeLowLevelField(outputStream);
 		} catch (FileNotFoundException e) {
 			Pipe.addNullByteArray(output);				
@@ -78,4 +79,16 @@ public class FileLoadStage extends PronghornStage {
 		Pipe.confirmLowLevelWrite(output);
 		Pipe.publishWrites(output);
 	}
+	
+//	java.lang.AssertionError: did not fully read file
+//	at com.javanut.pronghorn.stage.file.FileLoadStage.writeBody(FileLoadStage.java:71)
+//	at com.javanut.pronghorn.stage.file.FileLoadStage.run(FileLoadStage.java:57)
+//	at com.javanut.pronghorn.stage.scheduling.ScriptedNonThreadScheduler.runStageImpl(ScriptedNonThreadScheduler.java:987)
+//	at com.javanut.pronghorn.stage.scheduling.ScriptedNonThreadScheduler.runStage(ScriptedNonThreadScheduler.java:967)
+//	at com.javanut.pronghorn.stage.scheduling.ScriptedNonThreadScheduler.runBlock(ScriptedNonThreadScheduler.java:920)
+//	at com.javanut.pronghorn.stage.scheduling.ScriptedNonThreadScheduler.playScript(ScriptedNonThreadScheduler.java:674)
+//	at com.javanut.pronghorn.stage.scheduling.ScriptedFixedThreadsScheduler$3.run(ScriptedFixedThreadsScheduler.java:1436)
+//	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+//	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+//	at java.lang.Thread.run(Thread.java:748)
 }
